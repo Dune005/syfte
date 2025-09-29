@@ -1,0 +1,133 @@
+# Project Overview
+Syfte ist eine moderne Spar-App basierend auf Nuxt.js, die es Nutzern ermöglicht, Sparziele zu setzen, Fortschritte zu verfolgen und mit Freunden gemeinsam zu sparen. Die App bietet Features wie Achievements, Streaks, Push-Benachrichtigungen und Datenexport. Das Projekt befindet sich in der initialen Entwicklungsphase und wird als Full-Stack-Anwendung mit modernen Web-Technologien entwickelt.
+
+# Tech Stack
+## Backend
+- Frameworks/libraries: Nuxt.js 4 (Server-Side Rendering & API Routes)
+- Data store(s) and ORM: MariaDB (Schema definiert in db/syfte.sql)
+- APIs/services: Nuxt Server API, Push-Benachrichtigungen (VAPID via web-push), OAuth (Google)
+- Runtime/hosting: Node.js
+
+## Frontend
+- Framework(s): Nuxt.js 4 mit Vue 3
+- Language/build tooling: TypeScript, Vite (integriert in Nuxt)
+- Styling: CSS
+- PWA: @vite-pwa/nuxt (Service Worker, Manifest, Offline Support)
+- Icons: Heroicons / eigene SVGs
+
+## Testing
+- Unit: (noch zu konfigurieren)
+- E2E: (noch zu konfigurieren)
+- Coverage thresholds: (noch zu definieren)
+
+## Tooling
+- Package manager(s): npm
+- Lint/format: (noch zu konfigurieren)
+- CI system: (noch zu konfigurieren)
+- Design: Figma (UI-Design, Prototyping, Clickflows)
+
+## Hosting & DevOps
+- Hosting: Vercel, eigener Webserver
+- Code Hosting: GitHub
+- Push Notifications: Web Push (VAPID) via web-push Node-Package
+
+# Coding Guidelines
+- Typing/strictness: TypeScript mit strengen Typen
+- Error handling: Vue 3 Error Boundaries und Nuxt Error Pages
+- Security practices: 
+  - @nuxtjs/security für automatische Security Headers
+  - Input Validation mit server/utils/validation.ts
+  - Password Hashing mit PBKDF2 (server/utils/security.ts)
+  - Rate Limiting für API-Endpunkte
+  - CSRF Protection und CSP Headers
+  - Environment Variables für sensible Daten (.env.example)
+- Accessibility expectations: WCAG 2.1 AA Standard
+- Commit style: Conventional Commits
+- Branching strategy: Git Flow
+- Code review requirements: Pull Request Reviews erforderlich
+
+## Vue.js Spezifische Richtlinien
+- **Syntax:** ES6+ verwenden
+- **Vue API:** Composition API (nicht Options API)
+- **Async:** `async/await` bevorzugen statt `.then()`
+- **Composables:** Wiederverwendbare Logik in Composables extrahieren (Prefix: `use`)
+- **Props:** Direkte Destrukturierung in `setup()` Funktion
+- **Naming:** 
+  - `camelCase` für Variablen und Funktionen
+  - `PascalCase` für Komponenten und Klassen
+- **v-html:** Nur im `MarkdownRenderer.vue` Component erlaubt
+
+# Project Structure
+- `pages/` - Route-basierte Pages (Nuxt Auto-Routing)
+- `components/` - Vue Komponenten
+- `composables/` - Vue Composables (wiederverwendbare Logik)
+- `layouts/` - Nuxt Layouts
+- `middleware/` - Nuxt Middleware
+- `plugins/` - Nuxt Plugins
+- `server/` - Server API Routes
+- `assets/` - Statische Assets (CSS, Bilder)
+- `public/` - Öffentliche statische Dateien
+- `db/` - Datenbankschemas und Migrationen
+- `Anleitungen/` - Projekt-Dokumentation und Security Guides
+- `.nuxt/` - Generierte Nuxt Dateien (auto-generiert)
+
+# Resources & Automation
+## Scripts
+- `npm run dev` — Start local development server (Port 3200)
+- `npm run dev:3000` — Start auf Port 3000 (falls 3200 belegt)
+- `npm run dev:alt` — Alternative Port 3100
+- `npm run build` — Build the application for production
+- `npm run preview` — Preview production build locally
+- `npm run postinstall` — Generate Nuxt types
+
+## Development Server
+- Local: http://localhost:3200 (Standard-Port für Syfte)
+- Alternative Ports: 3000 (dev:3000), 3100 (dev:alt)
+- Hot Module Replacement aktiviert
+- TypeScript Support aktiviert
+- Network-Zugriff: --host für externes Testing
+
+## MCP Servers / Agents
+(Noch keine konfiguriert)
+
+## CI Tasks
+(Noch nicht konfiguriert)
+
+# Notes for Contributors
+- Environment variables: Nutze `.env` für lokale Entwicklung (siehe `.env.example`)
+- Nuxt generiert automatisch TypeScript Types in `.nuxt/`
+- Server API Routes werden automatisch unter `/api/` verfügbar
+- Vue DevTools Extension empfohlen für Entwicklung
+- Database Schema ist in `db/syfte.sql` definiert
+
+## Sicherheitsfeatures
+- **@nuxtjs/security:** Automatische Security Headers und CSP
+- **Input Validation:** Server-side Validierung mit `server/utils/validation.ts`
+- **Password Security:** PBKDF2 Hashing in `server/utils/security.ts`
+- **Rate Limiting:** API-Schutz gegen Brute Force (Memory-basiert, Redis für Production)
+- **Environment Variables:** Sichere Konfiguration über `.env` (siehe `.env.example`)
+- **CORS:** Konfiguriert für Development und Production
+- **Security Headers:** CSP, HSTS, X-Frame-Options, X-XSS-Protection
+
+## App-Features (basierend auf Datenbankschema)
+- **Sparziele:** Nutzer können individuelle oder geteilte Sparziele erstellen
+- **Sparaktionen:** Vordefinierte Aktivitäten zum Geld sparen (z.B. "Kaffee ausgelassen")
+- **Achievements:** Auszeichnungen für Meilensteine (Streaks, Sparsummen)
+- **Freundschaften:** Soziales Sparen mit Freunden (pending/accepted/blocked Status)
+- **Push-Benachrichtigungen:** Tägliche Erinnerungen via Web Push (VAPID)
+- **Datenexport:** CSV/JSON Export für Transaktionen und Sparziele
+- **Multi-Auth:** Password und Google OAuth Unterstützung
+
+## Datenbankstruktur (MySQL)
+- **users:** Benutzerprofile mit Gesamtspar-Summe
+- **goals:** Sparziele mit Fortschritt und Sharing-Optionen
+- **savings:** Einzelne Sparvorgänge (Transaktionen)
+- **achievements:** Gamification-System mit Auszeichnungen
+- **streaks:** Spar-Serien Tracking
+- **daily_aggregates:** Tages-Summen für Analytics
+- **friendships:** Soziales Netzwerk zwischen Nutzern
+
+## Bekannte Besonderheiten
+- Nuxt 4 Template verwendet (neueste Version)
+- Auto-Import für Composables und Components aktiviert
+- SSR (Server-Side Rendering) standardmäßig aktiviert
