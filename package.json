@@ -9,12 +9,30 @@
     "dev:alt": "nuxt dev --port 3100", 
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage"
   },
   "dependencies": {
     "@nuxtjs/security": "^0.0.0",
+    "argon2": "^0.41.1",
+    "better-sqlite3": "^11.5.0",
+    "drizzle-orm": "^0.36.1",
+    "jose": "^5.9.6",
+    "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.11.4",
     "nuxt": "^4.1.2",
     "vue": "^3.5.22",
-    "vue-router": "^4.5.1"
+    "vue-router": "^4.5.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/supertest": "^6.0.2",
+    "@vitest/ui": "^2.1.4",
+    "supertest": "^7.0.0",
+    "vitest": "^2.1.4"
   }
 }

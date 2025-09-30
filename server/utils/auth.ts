@@ -1,7 +1,5 @@
 import argon2 from 'argon2';
 import jwt from 'jsonwebtoken';
-import crypto from 'crypto';
-import { setCookie, deleteCookie, getCookie } from 'h3';
 
 const JWT_SECRET = process.env.SESSION_SECRET || 'change_me_to_long_random_string';
 const JWT_EXPIRES_IN = '7d';
@@ -80,44 +78,23 @@ export function getAuthCookie(event: any): string | undefined {
   return getCookie(event, 'auth-token');
 }
 
-/**
- * Generate secure random token
- */
-export function generateSecureToken(length: number = 32): string {
-  return crypto.randomBytes(length).toString('hex')
-}
+// Rate Limiting (Memory-based, for production use Redis)
+const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
 
-/**
- * Generate CSRF token
- */
-export function generateCSRFToken(): string {
-  return crypto.randomBytes(32).toString('base64')
-}
-
-/**
- * Simple rate limiting store (in production use Redis)
- */
-const rateLimitStore = new Map<string, { count: number; resetTime: number }>()
-
-export function checkRateLimit(
-  identifier: string, 
-  limit: number = 100, 
-  windowMs: number = 15 * 60 * 1000 // 15 minutes
-): { allowed: boolean; remaining: number; resetTime: number } {
-  const now = Date.now()
-  const record = rateLimitStore.get(identifier)
-
+export function rateLimit(key: string, maxAttempts: number = 5, windowMs: number = 15 * 60 * 1000): boolean {
+  const now = Date.now();
+  const record = rateLimitStore.get(key);
+  
   if (!record || now > record.resetTime) {
-    // Create new record or reset expired one
-    const resetTime = now + windowMs
-    rateLimitStore.set(identifier, { count: 1, resetTime })
-    return { allowed: true, remaining: limit - 1, resetTime }
+    rateLimitStore.set(key, { count: 1, resetTime: now + windowMs });
+    return true;
   }
-
-  if (record.count >= limit) {
-    return { allowed: false, remaining: 0, resetTime: record.resetTime }
+  
+  if (record.count >= maxAttempts) {
+    return false;
   }
-
-  record.count++
-  return { allowed: true, remaining: limit - record.count, resetTime: record.resetTime }
+  
+  record.count++;
+  return true;
 }
+
