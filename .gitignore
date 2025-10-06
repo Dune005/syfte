@@ -30,6 +30,7 @@ pids
 
 # IDE/Editor configs (may contain sensitive FTP/server configs)
 .vscode/
+.spec-workflow
 *.swp
 *.swo
 *~
