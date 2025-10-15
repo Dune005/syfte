@@ -44,7 +44,9 @@
       </div>
 
       <!-- Login Button -->
-      <button class="btn btn-login">Login</button>
+      <div class="login-button-wrapper">
+        <ButtonPrimary>Login</ButtonPrimary>
+      </div>
 
       <!-- Register Link -->
       <div class="register-link">
@@ -71,22 +73,21 @@ useHead({
 }
 
 .login-page {
-  position: fixed;
-  top: 0;
-  left: 0;
+  position: relative;
   width: 100%;
-  height: 100vh;
+  min-height: 100vh;
   background: #FFFFFF;
-  overflow: hidden;
   display: flex;
   justify-content: center;
   align-items: flex-start;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .back-button {
-  position: fixed;
-  top: 56px;
-  left: calc(50% - 196.5px + 31px);
+  position: absolute;
+  top: calc(56px + env(safe-area-inset-top, 0px));
+  left: 31px;
   width: 41px;
   height: 41px;
   background: none;
@@ -108,15 +109,9 @@ useHead({
   height: 100%;
 }
 
-@media (min-width: 394px) {
-  .back-button {
-    left: calc((100vw - 393px) / 2 + 31px);
-  }
-}
-
 .logo {
   position: absolute;
-  top: 75px;
+  top: calc(75px + env(safe-area-inset-top, 0px));
   left: 50%;
   transform: translateX(-50%);
   width: 90px;
@@ -199,28 +194,8 @@ useHead({
   color: #35C2C1;
 }
 
-.btn {
-  width: 100%;
-  height: 56px;
-  border-radius: 8px;
-  font-family: 'Urbanist', sans-serif;
-  font-weight: 600;
-  font-size: 15px;
-  line-height: 18px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border: none;
-}
-
-.btn-login {
-  background: #1E232C;
-  color: #FFFFFF;
+.login-button-wrapper {
   margin-bottom: 237px;
-}
-
-.btn-login:hover {
-  background: #2a3140;
 }
 
 .register-link {

@@ -58,6 +58,18 @@ Syfte ist eine moderne Spar-App basierend auf Nuxt.js, die es Nutzern ermöglich
 - **v-html:** Nur im `MarkdownRenderer.vue` Component erlaubt
 - **Design-Änderungen:** Bei Frontend-Änderungen die mit Design/UI zu tun haben, immer zuerst `specs/designkonzept/requirements.md` konsultieren
 
+## iOS/Smartphone Spezifische Richtlinien
+- **Viewport Meta-Tag:** Immer `viewport-fit=cover` verwenden für vollflächige Darstellung auf iPhones
+- **Safe Area Insets:** CSS `env()` Funktion nutzen für sichere Bereiche:
+  - `env(safe-area-inset-top)` - für die Notch (ca. 0px bei Portrait mit Status Bar)
+  - `env(safe-area-inset-bottom)` - für Home-Indicator (ca. 34px auf iPhone X+)
+  - `env(safe-area-inset-left/right)` - für abgerundete Ecken (ca. 44px bei Landscape)
+- **Fallback-Werte:** Immer zweiten Parameter in `env()` angeben für Browser-Kompatibilität
+- **Fixed Positioning:** Vorsichtig nutzen - kann auf iOS Safari Probleme mit Safe Areas verursachen
+- **Scrollable Content:** Bevorzugen statt `position: fixed` für natürliches Smartphone-Verhalten (verschwindende Browser-Balken)
+- **Margins:** Mindestens 16px für Mobile-Ansichten
+- **Responsive Units:** Relative Einheiten (%, em, rem, vw, vh) statt fixe Pixel-Werte bevorzugen
+
 # Project Structure
 - `app.vue` - **Root Layout (MUSS im Root-Verzeichnis liegen, nicht in /app!)** - Wrapper für alle Seiten mit `<NuxtPage />`
 - `pages/` - Route-basierte Pages (Nuxt Auto-Routing)
