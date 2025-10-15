@@ -199,7 +199,7 @@ useHead({
 }
 
 .register-link {
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Lato', sans-serif;
   font-weight: 600;
   font-size: 15px;
   line-height: 21px;

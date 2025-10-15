@@ -80,16 +80,20 @@ useHead({
   height: 216px;
   margin-bottom: 30px;
   object-fit: contain;
+  opacity: 0;
+  animation: fadeInDown 0.6s ease-out 0.1s forwards;
 }
 
 .tagline {
   margin-top: 20px;
   text-align: center;
   width: 100%;
+  opacity: 0;
+  animation: fadeInUp 0.6s ease-out 0.3s forwards;
 }
 
 .stay {
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Lato', sans-serif;
   font-weight: 300;
   font-size: 32px;
   line-height: 20px;
@@ -99,8 +103,8 @@ useHead({
 }
 
 .motivated {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 700;
+  font-family: 'Lato', sans-serif;
+  font-weight: 900;
   font-size: 32px;
   line-height: 20px;
   letter-spacing: -0.24px;
@@ -114,6 +118,8 @@ useHead({
   gap: 15px;
   width: 100%;
   margin-top: 69px;
+  opacity: 0;
+  animation: fadeInUp 0.6s ease-out 0.5s forwards;
 }
 
 .mascot {
@@ -124,11 +130,56 @@ useHead({
   height: 181px;
   object-fit: contain;
   z-index: 1;
+  opacity: 0;
+  animation: fadeIn 0.6s ease-out 0.7s forwards;
 }
 
 @media (min-width: 394px) {
   .mascot {
     right: calc((100vw - 393px) / 2 + 15px);
+  }
+}
+
+/* Animationen */
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Respektiere Nutzer-Präferenzen für reduzierte Bewegung */
+@media (prefers-reduced-motion: reduce) {
+  .logo,
+  .tagline,
+  .buttons,
+  .mascot {
+    animation: none;
+    opacity: 1;
   }
 }
 </style>

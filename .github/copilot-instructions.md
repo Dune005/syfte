@@ -25,6 +25,9 @@ Syfte ist eine moderne Spar-App basierend auf Nuxt.js, die es Nutzern ermöglich
 - Lint/format: (noch zu konfigurieren)
 - CI system: (noch zu konfigurieren)
 - Design: Figma (UI-Design, Prototyping, Clickflows)
+  - **Figma File Key:** tLgaFKFXHePoBy6zYofs0O
+  - **Zugriff:** Via MCP Figma Server mit `mcp_figma_get_figma_data`
+  - **Design Specs:** Siehe auch `specs/designkonzept/requirements.md` für Farbschema und Typography
 
 ## Hosting & DevOps
 - Hosting: Vercel, eigener Webserver
