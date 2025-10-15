@@ -56,8 +56,10 @@ Syfte ist eine moderne Spar-App basierend auf Nuxt.js, die es Nutzern ermöglich
   - `camelCase` für Variablen und Funktionen
   - `PascalCase` für Komponenten und Klassen
 - **v-html:** Nur im `MarkdownRenderer.vue` Component erlaubt
+- **Design-Änderungen:** Bei Frontend-Änderungen die mit Design/UI zu tun haben, immer zuerst `specs/designkonzept/requirements.md` konsultieren
 
 # Project Structure
+- `app.vue` - **Root Layout (MUSS im Root-Verzeichnis liegen, nicht in /app!)** - Wrapper für alle Seiten mit `<NuxtPage />`
 - `pages/` - Route-basierte Pages (Nuxt Auto-Routing)
 - `components/` - Vue Komponenten
 - `composables/` - Vue Composables (wiederverwendbare Logik)
@@ -70,6 +72,12 @@ Syfte ist eine moderne Spar-App basierend auf Nuxt.js, die es Nutzern ermöglich
 - `db/` - Datenbankschemas und Migrationen
 - `Anleitungen/` - Projekt-Dokumentation und Security Guides
 - `.nuxt/` - Generierte Nuxt Dateien (auto-generiert)
+
+## Wichtige Nuxt 4 Besonderheiten
+- **app.vue Location:** In Nuxt 4 MUSS `app.vue` im Root-Verzeichnis liegen, nicht in `/app/`
+- **app.vue Rolle:** Enthält globale Wrapper-Komponente mit `<NuxtPage />` für das Routing
+- **Pages-System:** Dateien in `/pages` werden automatisch zu Routen (z.B. `pages/index.vue` → `/`)
+- **Kein Tailwind:** Projekt nutzt reines CSS, keine Tailwind-Klassen verwenden
 
 # Resources & Automation
 ## Scripts
@@ -94,11 +102,15 @@ Syfte ist eine moderne Spar-App basierend auf Nuxt.js, die es Nutzern ermöglich
 (Noch nicht konfiguriert)
 
 # Notes for Contributors
-- Environment variables: Nutze `.env` für lokale Entwicklung (siehe `.env.example`)
+- **Environment variables:** Nutze `.env` für lokale Entwicklung (siehe `.env.example`)
+  - **DATABASE_URL erforderlich:** Format `mysql://USER:PASSWORD@HOST:PORT/DATABASE`
+  - Bei fehlendem DATABASE_URL: Server startet nicht (Critical Error)
+- **Nuxt 4 Setup:** Bei erstmaliger Installation: `npm install drizzle-orm mysql2` für Datenbankzugriff
 - Nuxt generiert automatisch TypeScript Types in `.nuxt/`
 - Server API Routes werden automatisch unter `/api/` verfügbar
 - Vue DevTools Extension empfohlen für Entwicklung
 - Database Schema ist in `db/syfte.sql` definiert
+- **Troubleshooting:** Bei "Create a Vue component in pages/" Warnung: `app.vue` muss im Root liegen, `.nuxt/` löschen hilft bei Cache-Problemen
 
 ## Sicherheitsfeatures
 - **@nuxtjs/security:** Automatische Security Headers und CSP
