@@ -158,3 +158,27 @@ Syfte ist eine moderne Spar-App basierend auf Nuxt.js, die es Nutzern ermöglich
 - Nuxt 4 Template verwendet (neueste Version)
 - Auto-Import für Composables und Components aktiviert
 - SSR (Server-Side Rendering) standardmäßig aktiviert
+
+## Wichtige Erkenntnisse aus der Entwicklung
+### Dashboard & Sparziele-Anzeige
+- **Problem:** Sparziele wurden im Dashboard nicht angezeigt, obwohl sie in der DB existierten
+- **Ursache:** `/api/goals/index` verwendet LEFT JOIN mit `savings`-Tabelle → NULL-Werte bei neuen Zielen ohne Savings
+- **Lösung:** Dashboard nutzt jetzt `/api/dashboard` API, die Ziele direkt aus `goals`-Tabelle lädt
+- **Lernpunkt:** Bei JOIN-Abfragen auf NULL-Werte prüfen, besonders bei optionalen Beziehungen
+
+### API-Parameter-Konsistenz
+- **Problem:** "Aktion erstellt, aber konnte nicht zugewiesen werden" Fehler
+- **Ursache:** API erwartet `actionId` (singular), aber Frontend sendet `actionIds` (plural Array)
+- **Lösung:** Parameter korrigiert zu `actionId: response.action.id`
+- **Lernpunkt:** API-Schemas genau prüfen - Singular vs. Plural bei Parametern
+
+### Dynamische Routing-Struktur
+- **Erkenntnis:** Nuxt 4 Pages-System: `pages/goals/[id].vue` → `/goals/:id`
+- **Implementierung:** Vollständige Sparziel-Detailseite mit allen CRUD-Operationen
+- **Best Practice:** Route-Parameter mit `useRoute()` und `route.params.id` auslesen
+- **Lernpunkt:** Konsistente Namenskonvention bei API-Endpunkten und Routes einhalten
+
+### Frontend-Backend-Datenfluss
+- **Muster:** Frontend lädt Daten → zeigt sie an → Benutzer-Interaktion → API-Aufruf → Daten-Refresh
+- **Beispiel:** Sparaktion erstellen → `/api/actions/create` → `/api/goals/[id]/actions` → Detailseite neu laden
+- **Lernpunkt:** Immer nach erfolgreichen Mutationen die relevanten Daten neu laden

@@ -308,7 +308,7 @@ const MAX_IMAGE_SIZE = 5 * 1024 * 1024 // 5 MB
 
 // Methods
 const navigateToGoal = (goalId) => {
-  router.push(`/goal/${goalId}`)
+  router.push(`/goals/${goalId}`)
 }
 
 const normalizeAmount = (value) => {
@@ -334,10 +334,10 @@ const normalizeAmount = (value) => {
 
 const fetchGoals = async () => {
   try {
-    const goalsResponse = await $fetch('/api/goals/index')
+    const dashboardResponse = await $fetch('/api/dashboard')
 
-    const mappedGoals = Array.isArray(goalsResponse?.goals)
-      ? goalsResponse.goals.map(goal => ({
+    const mappedGoals = Array.isArray(dashboardResponse?.dashboard?.goals)
+      ? dashboardResponse.dashboard.goals.map(goal => ({
           id: goal.id,
           name: goal.title,
           current: normalizeAmount(goal.savedChf),
@@ -604,6 +604,16 @@ const logout = async () => {
 // Lifecycle
 onMounted(async () => {
   await fetchGoals()
+  
+  try {
+    const dashboardResponse = await $fetch('/api/dashboard')
+    if (dashboardResponse?.dashboard?.user) {
+      const user = dashboardResponse.dashboard.user
+      userProfile.value.name = `${user.firstName} ${user.lastName}`
+    }
+  } catch (error) {
+    console.error('Fehler beim Laden der Benutzerdaten:', error)
+  }
   
   try {
     const savingsResponse = await $fetch('/api/savings/stats')
