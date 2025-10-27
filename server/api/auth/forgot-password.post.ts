@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { randomBytes } from 'crypto';
 import { db } from '../../utils/database/connection';
 import { users, passwordResets } from '../../utils/database/schema';
+import { sendPasswordResetEmail } from '../../utils/email'
 
 // Validation schema
 const forgotPasswordSchema = z.object({
@@ -59,9 +60,13 @@ export default defineEventHandler(async (event) => {
         expiresAt
       });
 
-    // TODO: Send password reset email
-    // For now, we'll just log the token (remove in production!)
-    console.log(`Password reset token for ${email}: ${resetToken}`);
+    // Send password reset email (if SMTP configured, otherwise this will log the reset URL)
+    try {
+      await sendPasswordResetEmail(email, resetToken)
+    } catch (e) {
+      // Log but don't leak to client
+      console.error('Error sending password reset email:', e)
+    }
     
     return {
       success: true,

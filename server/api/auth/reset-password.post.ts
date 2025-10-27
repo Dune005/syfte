@@ -12,8 +12,8 @@ const resetPasswordSchema = z.object({
 
 export default defineEventHandler(async (event) => {
   // Only allow POST requests
-  assertMethod(event, 'POST');
-  
+  assertMethod(event, 'POST'); 
+   
   try {
     // Parse request body
     const body = await readBody(event);
@@ -74,6 +74,14 @@ export default defineEventHandler(async (event) => {
         eq(authIdentities.userId, resetRequest.userId),
         eq(authIdentities.provider, 'password')
       ));
+
+    // Also update the users table password_hash column for direct password lookups
+    await db
+      .update(users)
+      .set({
+        passwordHash: hashedPassword
+      })
+      .where(eq(users.id, resetRequest.userId));
 
     // Mark reset token as used
     await db
