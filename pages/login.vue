@@ -20,22 +20,32 @@
 
       <!-- Email Input -->
       <div class="input-group">
-        <input 
-          type="email" 
-          id="email" 
+        <input
+          v-model="usernameOrEmail"
+          ref="emailRef"
+          type="email"
+          @keyup.enter="onLogin"
+          id="email"
           placeholder="E-Mail"
           class="input-field"
+          :aria-invalid="fieldErrors.email ? 'true' : 'false'"
         />
+        <p v-if="fieldErrors.email" class="field-error" role="alert">{{ fieldErrors.email }}</p>
       </div>
 
       <!-- Password Input -->
       <div class="input-group">
-        <input 
-          type="password" 
-          id="password" 
+        <input
+          v-model="password"
+          ref="passwordRef"
+          type="password"
+          @keyup.enter="onLogin"
+          id="password"
           placeholder="Passwort"
           class="input-field"
+          :aria-invalid="fieldErrors.password ? 'true' : 'false'"
         />
+        <p v-if="fieldErrors.password" class="field-error" role="alert">{{ fieldErrors.password }}</p>
       </div>
 
       <!-- Forgot Password -->
@@ -45,7 +55,13 @@
 
       <!-- Login Button -->
       <div class="login-button-wrapper">
-        <ButtonPrimary>Login</ButtonPrimary>
+        <ButtonPrimary :disabled="loading" @click="onLogin">
+          <template v-if="loading">Anmelden…</template>
+          <template v-else>Login</template>
+        </ButtonPrimary>
+
+        <!-- Global error banner -->
+        <div v-if="error" class="error-banner" role="alert" aria-live="assertive">{{ error }}</div>
       </div>
 
       <!-- Register Link -->
@@ -56,13 +72,123 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import { ref, reactive, nextTick } from 'vue'
+import { useRouter, useHead } from '#imports'
+
 useHead({
   title: 'Login - Syfte',
   meta: [
     { name: 'description', content: 'Melde dich bei Syfte an und starte dein Sparziel.' }
   ]
 })
+
+const router = useRouter()
+
+// form state
+const usernameOrEmail = ref('')
+const password = ref('')
+const loading = ref(false)
+const error = ref('')
+const fieldErrors = reactive<{ email?: string; password?: string }>({})
+
+// refs for focus management
+const emailRef = ref<HTMLInputElement | null>(null)
+const passwordRef = ref<HTMLInputElement | null>(null)
+
+// small utility for focusing first invalid field
+async function focusFirstInvalid() {
+  await nextTick()
+  if (fieldErrors.email && emailRef.value) {
+    emailRef.value.focus()
+  } else if (fieldErrors.password && passwordRef.value) {
+    passwordRef.value.focus()
+  }
+}
+
+// Login action with AbortController timeout and performant error handling
+async function onLogin() {
+  if (loading.value) return
+  error.value = ''
+  fieldErrors.email = undefined
+  fieldErrors.password = undefined
+
+  // simple client-side validation
+  if (!usernameOrEmail.value || usernameOrEmail.value.trim() === '') {
+    fieldErrors.email = 'E-Mail oder Benutzername ist erforderlich.'
+  }
+  if (!password.value || password.value.trim() === '') {
+    fieldErrors.password = 'Passwort ist erforderlich.'
+  }
+
+  if (fieldErrors.email || fieldErrors.password) {
+    await focusFirstInvalid()
+    return
+  }
+
+  loading.value = true
+
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 10000) // 10s timeout
+
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include', // ensure httpOnly cookie from server is set
+      body: JSON.stringify({ usernameOrEmail: usernameOrEmail.value.trim(), password: password.value }),
+      signal: controller.signal
+    })
+
+    let payload: any = null
+    try {
+      payload = await res.json()
+    } catch (_e) {
+      // non-json response
+      payload = null
+    }
+
+    if (!res.ok) {
+      // map common status codes to friendly messages
+      if (res.status === 401) {
+        error.value = 'Ungültige Anmeldedaten. Bitte überprüfe E-Mail/Benutzername und Passwort.'
+      } else if (res.status === 422) {
+        // validation errors from server (expected shape: { details: { email: '...', password: '...' } })
+        if (payload && payload.details) {
+          fieldErrors.email = payload.details.usernameOrEmail || payload.details.email || fieldErrors.email
+          fieldErrors.password = payload.details.password || fieldErrors.password
+          await focusFirstInvalid()
+        } else {
+          error.value = payload?.error || 'Validierungsfehler. Bitte Eingaben prüfen.'
+        }
+      } else if (res.status >= 500) {
+        error.value = 'Serverfehler. Bitte später erneut versuchen.'
+      } else {
+        error.value = payload?.error || 'Anmeldung fehlgeschlagen. Bitte überprüfe deine Eingaben.'
+      }
+      return
+    }
+
+    // success path
+    if (payload && payload.success) {
+      // Redirect to dashboard or home
+      await router.replace('/dashboard')
+    } else {
+      // unexpected payload
+      error.value = payload?.message || 'Anmeldung konnte nicht abgeschlossen werden.'
+    }
+  } catch (err: unknown) {
+    const e = err as any
+    if (e?.name === 'AbortError') {
+      error.value = 'Netzwerk-Timeout. Bitte Verbindung prüfen und erneut versuchen.'
+    } else {
+      error.value = 'Netzwerkfehler. Bitte überprüfe deine Verbindung.'
+    }
+  } finally {
+    clearTimeout(timeout)
+    loading.value = false
+  }
+}
 </script>
 
 <style scoped>
@@ -222,5 +348,23 @@ useHead({
   .login-page {
     max-width: 100%;
   }
+}
+
+/* Error / helper styles */
+.error-banner {
+  font-family: 'Urbanist', sans-serif;
+  margin-top: 12px;
+  background: #FFF3F3;
+  color: #8B1E1E;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.field-error {
+  font-family: 'Urbanist', sans-serif;
+  color: #D04444;
+  font-size: 13px;
+  margin-top: 6px;
 }
 </style>

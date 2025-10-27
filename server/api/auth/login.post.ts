@@ -9,13 +9,13 @@ export default defineEventHandler(async (event) => {
   assertMethod(event, 'POST');
   
   // Rate limiting by IP
-  const clientIP = getHeader(event, 'x-forwarded-for') || getHeader(event, 'x-real-ip') || 'unknown';
-  if (!rateLimit(`login:${clientIP}`, 5, 15 * 60 * 1000)) {
-    throw createError({
-      statusCode: 429,
-      statusMessage: 'Zu viele Login-Versuche. Versuche es in 15 Minuten erneut.'
-    });
-  }
+  // const clientIP = getHeader(event, 'x-forwarded-for') || getHeader(event, 'x-real-ip') || 'unknown';
+  // if (!rateLimit(`login:${clientIP}`, 5, 15 * 60 * 1000)) {
+  //   throw createError({
+  //     statusCode: 429,
+  //     statusMessage: 'Zu viele Login-Versuche. Versuche es in 15 Minuten erneut.'
+  //   });
+  // }
 
   // Parse and validate request body
   const body = await readBody(event);
