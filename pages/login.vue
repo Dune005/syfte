@@ -18,24 +18,30 @@
         <h1>Schön dass du da bist!</h1>
       </div>
 
-      <!-- Email Input -->
+      <!-- Email/Username Input -->
       <div class="input-group">
-        <input 
-          type="email" 
-          id="email" 
-          placeholder="E-Mail"
+        <input
+          type="text"
+          id="usernameOrEmail"
+          v-model="formData.usernameOrEmail"
+          placeholder="E-Mail oder Benutzername"
           class="input-field"
+          :class="{ 'error': errors.usernameOrEmail }"
         />
+        <span v-if="errors.usernameOrEmail" class="error-message">{{ errors.usernameOrEmail }}</span>
       </div>
 
       <!-- Password Input -->
       <div class="input-group">
-        <input 
-          type="password" 
-          id="password" 
+        <input
+          type="password"
+          id="password"
+          v-model="formData.password"
           placeholder="Passwort"
           class="input-field"
+          :class="{ 'error': errors.password }"
         />
+        <span v-if="errors.password" class="error-message">{{ errors.password }}</span>
       </div>
 
       <!-- Forgot Password -->
@@ -45,24 +51,72 @@
 
       <!-- Login Button -->
       <div class="login-button-wrapper">
-        <ButtonPrimary>Login</ButtonPrimary>
+        <ButtonPrimary @click="handleLogin" :disabled="isLoading">
+          {{ isLoading ? 'Wird angemeldet...' : 'Login' }}
+        </ButtonPrimary>
       </div>
 
       <!-- Register Link -->
       <div class="register-link">
-        Du hast noch keinen Account? <strong>Registrieren</strong>
+        Du hast noch keinen Account? <NuxtLink to="/register"><strong>Registrieren</strong></NuxtLink>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
+import { LoginSchema } from '~/server/utils/schemas'
+
 useHead({
   title: 'Login - Syfte',
   meta: [
     { name: 'description', content: 'Melde dich bei Syfte an und starte dein Sparziel.' }
   ]
 })
+
+const formData = ref({
+  usernameOrEmail: '',
+  password: ''
+})
+
+const errors = ref({})
+const isLoading = ref(false)
+
+const handleLogin = async () => {
+  errors.value = {}
+  
+  const validation = LoginSchema.safeParse(formData.value)
+  
+  if (!validation.success) {
+    const fieldErrors = validation.error.flatten().fieldErrors
+    Object.keys(fieldErrors).forEach(field => {
+      errors.value[field] = fieldErrors[field][0]
+    })
+    return
+  }
+  
+  isLoading.value = true
+  
+  try {
+    const response = await $fetch('/api/auth/login', {
+      method: 'POST',
+      body: formData.value
+    })
+    
+    if (response.success) {
+      // Redirect to dashboard or home page after successful login
+      await navigateTo('/')
+    }
+  } catch (error) {
+    if (error.data?.errors) {
+      errors.value = error.data.errors
+    } else {
+      errors.value.general = error.statusMessage || 'Ein Fehler ist beim Login aufgetreten.'
+    }
+  } finally {
+    isLoading.value = false
+  }
+}
 </script>
 
 <style scoped>
@@ -172,6 +226,21 @@ useHead({
   background: #FFFFFF;
 }
 
+.input-field.error {
+  border-color: #e74c3c;
+  background: #fdf2f2;
+}
+
+.error-message {
+  display: block;
+  font-family: 'Urbanist', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 14px;
+  color: #e74c3c;
+  margin-top: 4px;
+}
+
 
 
 .forgot-password {
@@ -212,6 +281,7 @@ useHead({
   color: #35C2C1;
   cursor: pointer;
   transition: color 0.3s ease;
+  text-decoration: none;
 }
 
 .register-link strong:hover {
