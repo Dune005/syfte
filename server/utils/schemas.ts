@@ -38,6 +38,32 @@ export const LoginSchema = z.object({
     .max(128, 'Passwort zu lang')
 });
 
+// Forgot Password Schema
+export const ForgotPasswordSchema = z.object({
+  email: z.string()
+    .email('Ungültige Email-Adresse')
+    .max(255, 'Email zu lang')
+});
+
+// Reset Password Schema
+export const ResetPasswordSchema = z.object({
+  token: z.string()
+    .min(1, 'Token ist erforderlich'),
+  newPassword: z.string()
+    .min(8, 'Passwort muss mindestens 8 Zeichen haben')
+    .max(128, 'Passwort zu lang')
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Passwort muss Groß-, Kleinbuchstaben und Zahl enthalten'),
+  confirmPassword: z.string()
+    .min(8, 'Passwort muss mindestens 8 Zeichen haben')
+    .max(128, 'Passwort zu lang')
+}).refine(
+  (data) => data.newPassword === data.confirmPassword,
+  {
+    path: ['confirmPassword'],
+    message: 'Passwörter stimmen nicht überein'
+  }
+);
+
 // Password Change Schema
 export const ChangePasswordSchema = z.object({
   currentPassword: z.string().min(1, 'Aktuelles Passwort erforderlich'),
@@ -112,6 +138,8 @@ export const CreateActionSchema = z.object({
 // Types from schemas
 export type RegisterInput = z.infer<typeof RegisterSchema>;
 export type LoginInput = z.infer<typeof LoginSchema>;
+export type ForgotPasswordInput = z.infer<typeof ForgotPasswordSchema>;
+export type ResetPasswordInput = z.infer<typeof ResetPasswordSchema>;
 export type ChangePasswordInput = z.infer<typeof ChangePasswordSchema>;
 export type UpdateProfileInput = z.infer<typeof UpdateProfileSchema>;
 export type UpdateGoalInput = z.infer<typeof UpdateGoalSchema>;

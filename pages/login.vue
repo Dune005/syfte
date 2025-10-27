@@ -50,7 +50,7 @@
 
       <!-- Forgot Password -->
       <div class="forgot-password">
-        <a href="#">Passwort vergessen?</a>
+        <NuxtLink to="/forgot-password">Passwort vergessen?</NuxtLink>
       </div>
 
       <!-- Login Button -->
