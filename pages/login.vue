@@ -18,7 +18,7 @@
         <h1>Schön dass du da bist!</h1>
       </div>
 
-      <!-- Email Input -->
+      <!-- Email/Username Input -->
       <div class="input-group">
         <input
           v-model="usernameOrEmail"
@@ -66,7 +66,7 @@
 
       <!-- Register Link -->
       <div class="register-link">
-        Du hast noch keinen Account? <strong>Registrieren</strong>
+        Du hast noch keinen Account? <NuxtLink to="/register"><strong>Registrieren</strong></NuxtLink>
       </div>
     </div>
   </div>
@@ -298,6 +298,21 @@ async function onLogin() {
   background: #FFFFFF;
 }
 
+.input-field.error {
+  border-color: #e74c3c;
+  background: #fdf2f2;
+}
+
+.error-message {
+  display: block;
+  font-family: 'Urbanist', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 14px;
+  color: #e74c3c;
+  margin-top: 4px;
+}
+
 
 
 .forgot-password {
@@ -338,6 +353,7 @@ async function onLogin() {
   color: #35C2C1;
   cursor: pointer;
   transition: color 0.3s ease;
+  text-decoration: none;
 }
 
 .register-link strong:hover {
