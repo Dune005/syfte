@@ -10,7 +10,7 @@
 
       <div class="buttons">
         <ButtonPrimary to="/login">Login</ButtonPrimary>
-        <ButtonSecondary>Registrieren</ButtonSecondary>
+        <ButtonSecondary to="/register">Registrieren</ButtonSecondary>
       </div>
     </div>
 

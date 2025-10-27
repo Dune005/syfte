@@ -111,6 +111,7 @@
 
 <script setup>
 import { RegisterSchema } from '~/server/utils/schemas'
+import { toRaw } from 'vue'
 
 useHead({
   title: 'Registrieren - Syfte',
@@ -155,27 +156,57 @@ const validateForm = () => {
 }
 
 const handleRegister = async () => {
-  if (!validateForm()) {
-    return
-  }
-  
+  // Validate form first
+  if (!validateForm()) return
+
+  // Clear previous errors and set loading
+  errors.value = {}
   isLoading.value = true
-  
+
   try {
+    // Ensure we send a plain JSON object (not a proxied ref)
+    const payload = { ...toRaw(formData.value) }
+
     const response = await $fetch('/api/auth/register', {
       method: 'POST',
-      body: formData.value
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: payload
     })
-    
-    if (response.success) {
-      // Redirect to dashboard or home page after successful registration
-      await navigateTo('/')
+
+    // Expected response: { success: true, message: 'User created successfully', user: { ... } }
+    if (response?.success) {
+      // Optionally clear form
+      formData.value = {
+        firstName: '',
+        lastName: '',
+        username: '',
+        email: '',
+        password: ''
+      }
+
+      // Redirect to home or dashboard after successful registration
+      await navigateTo('/success')
+      return
     }
-  } catch (error) {
-    if (error.data?.errors) {
-      errors.value = error.data.errors
+
+    // If API returned a non-successful payload without throwing
+    errors.value.general = response?.message || 'Registrierung fehlgeschlagen.'
+  } catch (err) {
+    // $fetch throws FetchError which may contain `data` with details
+    const error = err
+    if (error?.data) {
+      // If backend returns field errors in { errors: { field: 'msg' } }
+      if (error.data.errors) {
+        errors.value = error.data.errors
+      } else if (error.data.message) {
+        errors.value.general = error.data.message
+      } else {
+        errors.value.general = error.statusMessage || 'Ein Fehler ist bei der Registrierung aufgetreten.'
+      }
     } else {
-      errors.value.general = error.statusMessage || 'Ein Fehler ist bei der Registrierung aufgetreten.'
+      errors.value.general = error?.message || 'Ein Fehler ist bei der Registrierung aufgetreten.'
     }
   } finally {
     isLoading.value = false
