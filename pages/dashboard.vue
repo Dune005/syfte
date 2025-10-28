@@ -396,7 +396,7 @@ const normalizeAmount = (value) => {
 
 const fetchActions = async () => {
   try {
-    const response = await $fetch('/api/actions')
+    const response = await $fetch('/api/actions/my')
     actions.value = response.actions || []
   } catch (error) {
     console.error('Fehler beim Laden der Sparaktionen:', error)
