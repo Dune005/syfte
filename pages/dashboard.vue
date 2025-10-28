@@ -228,43 +228,7 @@
 
             <div class="profile-name-row">
               <div class="name-field">
-                <template v-if="!editModeFirstName">
-                  <span class="name-text">{{ currentUser?.firstName || editFirstName || '' }}</span>
-                  <button type="button" class="name-edit-btn" @click="editModeFirstName = true" aria-label="Vorname bearbeiten">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                      <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z" fill="#1E232C"/>
-                    </svg>
-                  </button>
-                </template>
-                <template v-else>
-                  <input
-                    class="name-input"
-                    ref="firstNameInput"
-                    v-model="editFirstName"
-                    @keyup.enter="finishEdit('first')"
-                    @blur="finishEdit('first')"
-                  />
-                </template>
-              </div>
-
-              <div class="name-field">
-                <template v-if="!editModeLastName">
-                  <span class="name-text">{{ currentUser?.lastName || editLastName || '' }}</span>
-                  <button type="button" class="name-edit-btn" @click="editModeLastName = true" aria-label="Nachname bearbeiten">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                      <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z" fill="#1E232C"/>
-                    </svg>
-                  </button>
-                </template>
-                <template v-else>
-                  <input
-                    class="name-input"
-                    ref="lastNameInput"
-                    v-model="editLastName"
-                    @keyup.enter="finishEdit('last')"
-                    @blur="finishEdit('last')"
-                  />
-                </template>
+                <span class="name-text">{{ currentUser?.firstName || '' }} {{ currentUser?.lastName || '' }}</span>
               </div>
             </div>
 
@@ -356,8 +320,6 @@ const userProfile = ref({
 const currentUser = ref(null)
 
 // Profile edit state
-const editFirstName = ref('')
-const editLastName = ref('')
 const editProfileImageUrl = ref('')
 const profileImageInput = ref(null)
 const profileImageFile = ref(null)
@@ -365,8 +327,6 @@ const profileImagePreview = ref('')
 const profileError = ref('')
 const profileSuccess = ref('')
 const isSavingProfile = ref(false)
-const editModeFirstName = ref(false)
-const editModeLastName = ref(false)
 
 const userStats = ref(null)
 const currentGoalTarget = ref(0)
@@ -737,8 +697,6 @@ watch(showProfileModal, (val) => {
     profileError.value = ''
     profileSuccess.value = ''
     if (currentUser.value) {
-      editFirstName.value = currentUser.value.firstName || ''
-      editLastName.value = currentUser.value.lastName || ''
       editProfileImageUrl.value = currentUser.value.profileImageUrl || ''
       profileImagePreview.value = currentUser.value.profileImageUrl || ''
       profileImageFile.value = null
@@ -795,14 +753,6 @@ const saveProfile = async ({ closeOnSuccess = true } = {}) => {
   profileError.value = ''
   profileSuccess.value = ''
 
-  const firstNameTrim = (editFirstName.value || '').trim()
-  const lastNameTrim = (editLastName.value || '').trim()
-
-  if (!firstNameTrim || !lastNameTrim) {
-    profileError.value = 'Vor- und Nachname dürfen nicht leer sein.'
-    return
-  }
-
   isSavingProfile.value = true
 
   try {
@@ -825,52 +775,31 @@ const saveProfile = async ({ closeOnSuccess = true } = {}) => {
     const response = await $fetch('/api/profile/update', {
       method: 'PUT',
       body: {
-        firstName: firstNameTrim,
-        lastName: lastNameTrim,
         profileImageUrl: imageUrl
       }
     })
 
     if (response?.success) {
-      profileSuccess.value = response.message || 'Profil erfolgreich aktualisiert.'
+      profileSuccess.value = response.message || 'Profilbild erfolgreich aktualisiert.'
       // update local user state
       currentUser.value = response.user
-      userProfile.value.name = `${response.user.firstName} ${response.user.lastName}`
       profileImagePreview.value = response.user.profileImageUrl || ''
       // close modal after short delay if requested
       if (closeOnSuccess) {
         setTimeout(() => { showProfileModal.value = false }, 600)
       }
     } else {
-      profileError.value = response?.message || 'Profil konnte nicht aktualisiert werden.'
+      profileError.value = response?.message || 'Profilbild konnte nicht aktualisiert werden.'
     }
   } catch (error) {
     console.error('Fehler beim Speichern des Profils:', error)
-    profileError.value = getErrorMessage(error, 'Fehler beim Aktualisieren des Profils.')
+    profileError.value = getErrorMessage(error, 'Fehler beim Aktualisieren des Profilbilds.')
   } finally {
     isSavingProfile.value = false
   }
 }
 
-const finishEdit = async (which) => {
-  // If nothing changed, just close the edit mode
-  if (which === 'first') {
-    if ((editFirstName.value || '').trim() === (currentUser.value?.firstName || '')) {
-      editModeFirstName.value = false
-      return
-    }
-    editModeFirstName.value = false
-  } else {
-    if ((editLastName.value || '').trim() === (currentUser.value?.lastName || '')) {
-      editModeLastName.value = false
-      return
-    }
-    editModeLastName.value = false
-  }
 
-  // Save inline without closing the modal
-  await saveProfile({ closeOnSuccess: false })
-}
 </script>
 
 <style scoped>
@@ -1439,6 +1368,25 @@ const finishEdit = async (which) => {
   margin: 0;
 }
 
+.profile-name-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.name-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.name-text {
+  font-family: 'Urbanist', sans-serif;
+  font-weight: 600;
+  font-size: 18px;
+  color: #1E232C;
+}
+
 .stats-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1613,31 +1561,6 @@ const finishEdit = async (which) => {
 .avatar-wrapper:hover .edit-overlay {
   opacity: 1;
   transform: translateY(0);
-}
-
-.profile-image-upload {
-  margin-top: 12px;
-}
-
-.profile-image-url {
-  width: calc(100% - 140px);
-  padding: 8px 10px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-}
-
-.profile-image-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.profile-image-preview img {
-  width: 64px;
-  height: 64px;
-  object-fit: cover;
-  border-radius: 8px;
-  margin-top: 8px;
 }
 
 /* Responsive */
