@@ -16,26 +16,53 @@
       </div>
     </div>
 
-    <!-- Schnellsparen Bereich -->
-    <div class="quick-save-section">
-      <div class="quick-save-header">
-        <h3>Schnellsparen!</h3>
-        <div class="add-icon" @click="showQuickSaveModal = true">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="10" fill="#35C2C1"/>
-            <path d="M12 8v8M8 12h8" stroke="white" stroke-width="2" stroke-linecap="round"/>
-          </svg>
+    <!-- Sparaktionen Karussell -->
+    <div class="actions-section">
+      <h2 class="section-title">Schnellsparen!</h2>
+      <div class="actions-carousel" v-if="actions.length > 0">
+        <div class="actions-container">
+          <div
+            v-for="action in actions"
+            :key="action.id"
+            class="action-card"
+            :class="{ 
+              'executing': executingAction === action.id,
+              'success': successActions.includes(action.id)
+            }"
+            @click="selectAction(action)"
+          >
+            <div class="action-icon">
+              <div class="icon-circle">
+                <svg v-if="!successActions.includes(action.id)" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2v20M2 12h20" stroke="#35C2C1" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <svg v-else width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M20 6L9 17l-5-5" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>
+            <div class="action-content">
+              <h3>{{ action.title }}</h3>
+              <div class="action-amount">+{{ action.defaultChf }} CHF</div>
+            </div>
+            <div class="action-status">
+              <div v-if="executingAction === action.id" class="executing-indicator">
+                <div class="spinner"></div>
+              </div>
+              <div v-if="successActions.includes(action.id)" class="success-indicator">
+                <span>Gebucht!</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="quick-save-input">
-        <input 
-          v-model="quickSaveAmount" 
-          type="number" 
-          placeholder="variabler Betrag (CHF)"
-          @keyup.enter="addQuickSave"
-        />
+      <div v-else class="no-actions">
+        <p>Lade Sparaktionen...</p>
       </div>
-      <p class="quick-save-note">Wird immer auf deinen Favoriten gebucht.</p>
+      
+      <div class="actions-note">
+        <p>Alle Sparaktionen werden direkt auf dein <strong>Favoritenziel</strong> gebucht.</p>
+      </div>
     </div>
 
     <!-- Sparziele Liste -->
@@ -94,23 +121,6 @@
             </svg>
           </div>
           <span>Erstes Sparziel erstellen</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Schnellsparen Modal -->
-    <div v-if="showQuickSaveModal" class="modal-overlay" @click="showQuickSaveModal = false">
-      <div class="modal" @click.stop>
-        <h3>Schnellsparen</h3>
-        <input 
-          v-model="quickSaveAmount" 
-          type="number" 
-          placeholder="Betrag (CHF)"
-          class="modal-input"
-        />
-        <div class="modal-buttons">
-          <ButtonSecondary @click="showQuickSaveModal = false">Abbrechen</ButtonSecondary>
-          <ButtonPrimary @click="addQuickSave">Sparen</ButtonPrimary>
         </div>
       </div>
     </div>
@@ -308,10 +318,12 @@ const router = useRouter()
 
 // State
 const todaySavings = ref(20)
-const quickSaveAmount = ref('')
-const showQuickSaveModal = ref(false)
 const showAddGoalModal = ref(false)
 const showProfileModal = ref(false)
+const actions = ref([])
+const selectedAction = ref(null)
+const executingAction = ref(null)
+const successActions = ref([])
 
 const userProfile = ref({
   name: 'Aaron Täschler',
@@ -378,6 +390,16 @@ const normalizeAmount = (value) => {
   return 0
 }
 
+const fetchActions = async () => {
+  try {
+    const response = await $fetch('/api/actions')
+    actions.value = response.actions || []
+  } catch (error) {
+    console.error('Fehler beim Laden der Sparaktionen:', error)
+    actions.value = []
+  }
+}
+
 const fetchGoals = async () => {
   try {
     const dashboardResponse = await $fetch('/api/dashboard')
@@ -412,30 +434,69 @@ const fetchGoals = async () => {
   }
 }
 
-const addQuickSave = async () => {
-  if (!quickSaveAmount.value || quickSaveAmount.value <= 0) return
+const selectAction = async (action) => {
+  if (executingAction.value === action.id) return
+  
+  executingAction.value = action.id
   
   try {
-    const response = await $fetch('/api/savings/quick-add', {
+    // Finde das Favoritenziel des Benutzers
+    const favoriteGoal = goals.value.find(g => g.isFavorite)
+    
+    if (!favoriteGoal) {
+      // Wenn kein Favorit gesetzt ist, das erste Ziel verwenden
+      if (goals.value.length > 0) {
+        const firstGoal = goals.value[0]
+        await addActionToGoal(action.id, firstGoal.id)
+      } else {
+        // Keine Ziele vorhanden, zeige Hinweis
+        executingAction.value = null
+        alert('Bitte erstelle zuerst ein Sparziel.')
+      }
+    } else {
+      await addActionToGoal(action.id, favoriteGoal.id)
+    }
+  } catch (error) {
+    console.error('Fehler beim Auswählen der Aktion:', error)
+    executingAction.value = null
+    alert('Fehler beim Hinzufügen der Sparaktion.')
+  }
+}
+
+const addActionToGoal = async (actionId, goalId) => {
+  try {
+    const response = await $fetch('/api/savings/add-with-action', {
       method: 'POST',
       body: {
-        amount: parseFloat(quickSaveAmount.value)
+        actionId: actionId,
+        goalId: goalId
       }
     })
     
-    todaySavings.value += parseFloat(quickSaveAmount.value)
-    quickSaveAmount.value = ''
-    showQuickSaveModal.value = false
+    // Zeige Erfolg-Feedback
+    successActions.value.push(actionId)
     
-    // Aktualisiere das Favoritenziel mit den neuen Daten von der API
-    if (response.goal) {
-      const favoriteGoal = goals.value.find(g => g.isFavorite)
-      if (favoriteGoal) {
-        favoriteGoal.current = parseFloat(response.goal.savedChf)
-      }
+    // Entferne den Erfolg-Status nach 2 Sekunden
+    setTimeout(() => {
+      successActions.value = successActions.value.filter(id => id !== actionId)
+    }, 2000)
+    
+    // Aktualisiere die heutigen Ersparnisse
+    const action = actions.value.find(a => a.id === actionId)
+    if (action) {
+      todaySavings.value += action.defaultChf
+    }
+    
+    // Aktualisiere das entsprechende Ziel
+    const goal = goals.value.find(g => g.id === goalId)
+    if (goal && response.goal) {
+      goal.current = parseFloat(response.goal.savedChf)
     }
   } catch (error) {
-    console.error('Fehler beim Schnellsparen:', error)
+    console.error('Fehler beim Hinzufügen der Sparaktion:', error)
+    alert('Fehler beim Hinzufügen der Sparaktion.')
+  } finally {
+    executingAction.value = null
   }
 }
 
@@ -649,6 +710,7 @@ const logout = async () => {
 
 // Lifecycle
 onMounted(async () => {
+  await fetchActions()
   await fetchGoals()
   
   try {
@@ -867,51 +929,226 @@ const saveProfile = async ({ closeOnSuccess = true } = {}) => {
   line-height: 1.2;
 }
 
-/* Quick Save Section */
-.quick-save-section {
+/* Actions Section */
+.actions-section {
   padding: 24px 20px;
   background: #f8f9fa;
 }
 
-.quick-save-header {
+.actions-carousel {
+  margin-top: 16px;
+}
+
+.actions-container {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 8px 0 16px 0;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
 }
 
-.quick-save-header h3 {
-  font-size: 20px;
-  font-weight: 700;
-  color: #35C2C1;
-  margin: 0;
+.actions-container::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Edge */
 }
 
-.add-icon {
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.add-icon:hover {
-  transform: scale(1.1);
-}
-
-.quick-save-input input {
-  width: 100%;
-  height: 56px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 0 16px;
-  font-size: 16px;
+.action-card {
+  flex: 0 0 140px;
   background: white;
-  margin-bottom: 8px;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  scroll-snap-align: start;
+  border: 1px solid #E4E9F2;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
 }
 
-.quick-save-note {
+.action-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+  border-color: #35C2C1;
+}
+
+.action-card.executing {
+  border-color: #35C2C1;
+  background: linear-gradient(135deg, rgba(53, 194, 193, 0.05) 0%, rgba(53, 194, 193, 0.1) 100%);
+}
+
+.action-card.success {
+  border-color: #10B981;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.1) 100%);
+  animation: successPulse 0.6s ease-out;
+}
+
+@keyframes successPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0.1);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+  }
+}
+
+.action-icon {
+  margin-bottom: 12px;
+}
+
+.icon-circle {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: #F0F9F8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.action-card:hover .icon-circle {
+  background: #E6F7F6;
+  transform: scale(1.05);
+}
+
+.action-card.executing .icon-circle {
+  background: #E6F7F6;
+  animation: pulse 1.5s infinite;
+}
+
+.action-card.success .icon-circle {
+  background: #D1FAE5;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(53, 194, 193, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(53, 194, 193, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(53, 194, 193, 0);
+  }
+}
+
+.action-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.action-content h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1E232C;
+  margin: 0 0 8px 0;
+  line-height: 1.2;
+}
+
+.action-amount {
+  font-size: 16px;
+  font-weight: 800;
+  color: #35C2C1;
+  transition: all 0.3s ease;
+}
+
+.action-card.success .action-amount {
+  color: #10B981;
+  transform: scale(1.05);
+}
+
+.action-status {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.executing-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #E4E9F2;
+  border-top: 2px solid #35C2C1;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.success-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  animation: fadeInScale 0.3s ease-out;
+}
+
+.success-indicator span {
   font-size: 12px;
+  font-weight: 700;
+  color: #10B981;
+}
+
+@keyframes fadeInScale {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.no-actions {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+}
+
+.actions-note {
+  margin-top: 12px;
+  text-align: center;
+}
+
+.actions-note p {
+  font-size: 13px;
   color: #666;
   margin: 0;
-  text-align: center;
+  padding: 8px 16px;
+  background: rgba(53, 194, 193, 0.1);
+  border-radius: 20px;
+  display: inline-block;
+}
+
+.actions-note strong {
+  color: #35C2C1;
+  font-weight: 600;
 }
 
 /* Goals Section */
@@ -1057,41 +1294,6 @@ const saveProfile = async ({ closeOnSuccess = true } = {}) => {
   justify-content: center;
   z-index: 1000;
   padding: 20px;
-}
-
-.modal {
-  background: white;
-  border-radius: 16px;
-  padding: 24px;
-  width: 100%;
-  max-width: 400px;
-}
-
-.modal h3 {
-  font-size: 20px;
-  font-weight: 700;
-  color: #1E232C;
-  margin: 0 0 20px 0;
-}
-
-.modal-input {
-  width: 100%;
-  height: 56px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 0 16px;
-  font-size: 16px;
-  background: white;
-  margin-bottom: 16px;
-}
-
-.modal-buttons {
-  display: flex;
-  gap: 12px;
-}
-
-.modal-buttons button {
-  flex: 1;
 }
 
 .goal-modal {
