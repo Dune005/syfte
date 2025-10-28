@@ -27,7 +27,9 @@ const FTP_CONFIG = {
 };
 
 // Base URL for public access to uploaded images
-const IMAGE_BASE_URL = process.env.IMAGE_BASE_URL || 'https://exigo-ws82.exigo.ch/images_sparziele';
+const IMAGE_BASE_URL = process.env.IMAGE_BASE_URL || 'https://www.syfte.ch/images_sparziele';
+
+console.log(IMAGE_BASE_URL);
 
 export default defineEventHandler(async (event) => {
   // Only allow POST requests
@@ -137,6 +139,7 @@ export default defineEventHandler(async (event) => {
       
       // Generate public URL
       const publicUrl = `${IMAGE_BASE_URL}/${uniqueFilename}`;
+      console.log(publicUrl);
       
       return {
         success: true,
