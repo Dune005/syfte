@@ -1260,22 +1260,63 @@ const saveProfile = async ({ closeOnSuccess = true } = {}) => {
   bottom: 24px;
   right: 24px;
   cursor: pointer;
-  transition: transform 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 100;
 }
 
 .add-goal-button:hover {
-  transform: scale(1.1);
+  transform: scale(1.1) rotate(90deg);
+}
+
+.add-goal-button:active {
+  transform: scale(0.95) rotate(90deg);
 }
 
 .add-circle {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: #35C2C1;
+  background: linear-gradient(135deg, #35C2C1 0%, #2BA39E 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 12px rgba(53, 194, 193, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.add-circle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
+}
+
+.add-goal-button:hover .add-circle::before {
+  transform: translateX(0);
+}
+
+.add-circle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s ease, height 0.6s ease;
+}
+
+.add-goal-button:active .add-circle::after {
+  width: 100px;
+  height: 100px;
 }
 
 /* Modal */
@@ -1291,11 +1332,28 @@ const saveProfile = async ({ closeOnSuccess = true } = {}) => {
   justify-content: center;
   z-index: 1000;
   padding: 20px;
+  backdrop-filter: blur(4px);
 }
 
 .goal-modal {
+  background: white;
+  border-radius: 16px;
   max-width: 440px;
+  width: 100%;
   padding: 32px 28px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .goal-modal h3 {
@@ -1323,6 +1381,7 @@ const saveProfile = async ({ closeOnSuccess = true } = {}) => {
   font-weight: 500;
   color: #1E232C;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
 }
 
 .goal-modal-input:focus {
@@ -1346,7 +1405,9 @@ const saveProfile = async ({ closeOnSuccess = true } = {}) => {
   text-align: center;
   padding: 24px;
   cursor: pointer;
-  transition: border-color 0.2s ease, background 0.2s ease;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .goal-modal-dropzone-content p {
@@ -1371,12 +1432,13 @@ const saveProfile = async ({ closeOnSuccess = true } = {}) => {
   border-style: solid;
   border-color: transparent;
   background: transparent;
+  min-height: auto;
 }
 
 .goal-modal-preview {
   position: relative;
   width: 100%;
-  height: 100%;
+  height: 180px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1480,11 +1542,36 @@ const saveProfile = async ({ closeOnSuccess = true } = {}) => {
   align-items: center;
   gap: 12px;
   cursor: pointer;
-  transition: transform 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .add-goal-button-centered:hover {
-  transform: scale(1.05);
+  transform: scale(1.05) translateY(-2px);
+}
+
+.add-goal-button-centered:active {
+  transform: scale(0.98) translateY(0);
+}
+
+.add-goal-button-centered .add-circle {
+  position: relative;
+  overflow: hidden;
+}
+
+.add-goal-button-centered .add-circle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
+}
+
+.add-goal-button-centered:hover .add-circle::before {
+  transform: translateX(0);
 }
 
 .add-goal-button-centered span {
@@ -1502,6 +1589,8 @@ const saveProfile = async ({ closeOnSuccess = true } = {}) => {
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: modalSlideIn 0.3s ease-out;
 }
 
 .profile-header {
@@ -1813,6 +1902,32 @@ const saveProfile = async ({ closeOnSuccess = true } = {}) => {
   
   .no-goals-content p {
     font-size: 14px;
+  }
+
+  .modal-overlay {
+    padding: 16px;
+  }
+
+  .goal-modal {
+    padding: 24px 20px;
+  }
+
+  .goal-modal h3 {
+    font-size: 24px;
+  }
+
+  .goal-modal-input {
+    height: 56px;
+    font-size: 16px;
+  }
+
+  .goal-modal-dropzone {
+    min-height: 160px;
+    padding: 20px;
+  }
+
+  .goal-modal-preview {
+    height: 160px;
   }
 }
 </style>
