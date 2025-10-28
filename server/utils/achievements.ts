@@ -98,6 +98,95 @@ async function getUserAchievementStats(userId: number) {
 }
 
 /**
+ * Check custom achievement criteria
+ */
+async function checkCustomAchievement(
+  userId: number, 
+  slug: string, 
+  stats: Awaited<ReturnType<typeof getUserAchievementStats>>
+): Promise<boolean> {
+  try {
+    switch (slug) {
+      case 'woll-anfaenger':
+        // Du hast deine allererste Spar-Aktion getätigt
+        return stats.savingsCount >= 1;
+
+      case 'herdenfuehrer':
+        // Du hast ein zweites Sparziel angelegt
+        const goalsCountResult = await db
+          .select({
+            count: sql<number>`COUNT(*)`.as('count')
+          })
+          .from(goals)
+          .where(eq(goals.ownerId, userId));
+        
+        const goalsCount = Number(goalsCountResult[0]?.count ?? 0);
+        return goalsCount >= 2;
+
+      case 'gipfelstuermer':
+        // Du hast 50% eines Sparziels erreicht
+        const halfCompleteGoals = await db
+          .select({
+            id: goals.id
+          })
+          .from(goals)
+          .where(
+            and(
+              eq(goals.ownerId, userId),
+              sql`saved_chf >= (target_chf * 0.5)`
+            )
+          )
+          .limit(1);
+        
+        return halfCompleteGoals.length > 0;
+
+      case 'medaillen-trio':
+        // Mindestens drei verschiedene Verzichtsaktionen definiert und genutzt
+        const distinctActionsResult = await db
+          .select({
+            count: sql<number>`COUNT(DISTINCT action_id)`.as('count')
+          })
+          .from(savings)
+          .where(
+            and(
+              eq(savings.userId, userId),
+              sql`action_id IS NOT NULL`
+            )
+          );
+        
+        const distinctActionsCount = Number(distinctActionsResult[0]?.count ?? 0);
+        return distinctActionsCount >= 3;
+
+      case 'ziel-sprinter':
+        // Ein Sparziel innerhalb von 30 Tagen nach Erstellung erreicht
+        const quickCompletedGoals = await db
+          .select({
+            id: goals.id,
+            createdAt: goals.createdAt,
+            updatedAt: goals.updatedAt
+          })
+          .from(goals)
+          .where(
+            and(
+              eq(goals.ownerId, userId),
+              sql`saved_chf >= target_chf`,
+              sql`DATEDIFF(updated_at, created_at) <= 30`
+            )
+          )
+          .limit(1);
+        
+        return quickCompletedGoals.length > 0;
+
+      default:
+        return false;
+    }
+  } catch (error) {
+    console.error(`Error checking custom achievement ${slug}:`, error);
+    return false;
+  }
+}
+
+/**
  * Check and award new achievements for a user
  * Returns list of newly unlocked achievements
  */
@@ -153,8 +242,8 @@ export async function checkAndAwardAchievements(userId: number): Promise<NewlyUn
           break;
 
         case 'custom':
-          // Custom achievements need manual claiming
-          shouldAward = false;
+          // Custom achievements with specific logic
+          shouldAward = await checkCustomAchievement(userId, achievement.slug, stats);
           break;
       }
 
@@ -218,52 +307,62 @@ export async function getAchievementProgress(userId: number): Promise<Achievemen
     const stats = await getUserAchievementStats(userId);
 
     // Build progress for each achievement
-    const progress: AchievementProgress[] = allAchievements.map(achievement => {
-      const threshold = Number(achievement.thresholdValue);
-      let currentValue = 0;
+    const progress: AchievementProgress[] = await Promise.all(
+      allAchievements.map(async (achievement) => {
+        const threshold = Number(achievement.thresholdValue);
+        let currentValue = 0;
+        let isCompleted = false;
 
-      // Determine current value based on criteria type
-      switch (achievement.criteriaType) {
-        case 'total_saved':
-          currentValue = stats.totalSaved;
-          break;
+        // Determine current value based on criteria type
+        switch (achievement.criteriaType) {
+          case 'total_saved':
+            currentValue = stats.totalSaved;
+            isCompleted = currentValue >= threshold;
+            break;
 
-        case 'goal_completed':
-          currentValue = stats.completedGoals;
-          break;
+          case 'goal_completed':
+            currentValue = stats.completedGoals;
+            isCompleted = currentValue >= threshold;
+            break;
 
-        case 'daily_save':
-          currentValue = stats.savingsCount;
-          break;
+          case 'daily_save':
+            currentValue = stats.savingsCount;
+            isCompleted = currentValue >= threshold;
+            break;
 
-        case 'streak_days':
-          currentValue = Math.max(stats.currentStreak, stats.longestStreak);
-          break;
+          case 'streak_days':
+            currentValue = Math.max(stats.currentStreak, stats.longestStreak);
+            isCompleted = currentValue >= threshold;
+            break;
 
-        case 'custom':
-          currentValue = 0; // Custom achievements don't have automatic progress
-          break;
-      }
+          case 'custom':
+            // Check if custom achievement criteria is met
+            isCompleted = await checkCustomAchievement(userId, achievement.slug, stats);
+            currentValue = isCompleted ? 1 : 0; // Binary for custom achievements
+            break;
+        }
 
-      const isEarned = earnedIds.has(achievement.id);
-      const isCompleted = currentValue >= threshold;
-      const progressPercentage = threshold > 0 
-        ? Math.min((currentValue / threshold) * 100, 100)
-        : 0;
+        const isEarned = earnedIds.has(achievement.id);
+        const progressPercentage = achievement.criteriaType === 'custom'
+          ? (isCompleted ? 100 : 0) // Custom achievements are binary (0% or 100%)
+          : threshold > 0 
+            ? Math.min((currentValue / threshold) * 100, 100)
+            : 0;
 
-      return {
-        achievementId: achievement.id,
-        slug: achievement.slug,
-        name: achievement.name,
-        description: achievement.description ?? '',
-        criteriaType: achievement.criteriaType,
-        thresholdValue: threshold,
-        currentValue,
-        progressPercentage: Math.round(progressPercentage * 100) / 100,
-        isCompleted,
-        isEarned
-      };
-    });
+        return {
+          achievementId: achievement.id,
+          slug: achievement.slug,
+          name: achievement.name,
+          description: achievement.description ?? '',
+          criteriaType: achievement.criteriaType,
+          thresholdValue: threshold,
+          currentValue,
+          progressPercentage: Math.round(progressPercentage * 100) / 100,
+          isCompleted,
+          isEarned
+        };
+      })
+    );
 
     return progress;
 
@@ -363,7 +462,15 @@ export async function validateAchievementCriteria(
         break;
 
       case 'custom':
-        return { isValid: false, reason: 'Dieses Achievement kann nicht automatisch validiert werden.' };
+        // Validate custom achievement criteria
+        meetsRequirement = await checkCustomAchievement(userId, achievement.slug, stats);
+        if (!meetsRequirement) {
+          return { 
+            isValid: false, 
+            reason: getCustomAchievementFailureReason(achievement.slug)
+          };
+        }
+        break;
     }
 
     return { isValid: true };
@@ -371,5 +478,25 @@ export async function validateAchievementCriteria(
   } catch (error) {
     console.error('Error validating achievement criteria:', error);
     return { isValid: false, reason: 'Fehler bei der Validierung.' };
+  }
+}
+
+/**
+ * Get user-friendly failure reason for custom achievements
+ */
+function getCustomAchievementFailureReason(slug: string): string {
+  switch (slug) {
+    case 'woll-anfaenger':
+      return 'Du musst mindestens eine Spar-Aktion tätigen.';
+    case 'herdenfuehrer':
+      return 'Du musst mindestens 2 Sparziele anlegen.';
+    case 'gipfelstuermer':
+      return 'Du musst 50% eines Sparziels erreichen.';
+    case 'medaillen-trio':
+      return 'Du musst mindestens 3 verschiedene Verzichtsaktionen nutzen.';
+    case 'ziel-sprinter':
+      return 'Du musst ein Sparziel innerhalb von 30 Tagen erreichen.';
+    default:
+      return 'Die Kriterien für dieses Achievement sind nicht erfüllt.';
   }
 }
