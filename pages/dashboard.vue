@@ -4,7 +4,10 @@
     <div class="header">
       <div class="header-content">
         <div class="profile-image" @click="showProfileModal = true">
-          <img src="/images/syfte_Schaf/syfte_Schaf_happy.png" alt="Profilbild" />
+          <img 
+            :src="currentUser?.profileImageUrl || '/images/syfte_Schaf/syfte_Schaf_happy.png'" 
+            alt="Profilbild" 
+          />
         </div>
         <div class="daily-savings">
           <h2>Du hast heute schon</h2>
@@ -659,8 +662,6 @@ onMounted(async () => {
         editProfileImageUrl.value = user.profileImageUrl
         profileImagePreview.value = user.profileImageUrl
       }
-      editFirstName.value = user.firstName || ''
-      editLastName.value = user.lastName || ''
     }
   } catch (error) {
     console.error('Fehler beim Laden der Benutzerdaten:', error)

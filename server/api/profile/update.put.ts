@@ -6,9 +6,9 @@ import { verifyJWT, getAuthCookie } from '../../utils/auth';
 
 // Validation schema
 const updateProfileSchema = z.object({
-  firstName: z.string().min(1, 'Vorname ist erforderlich.').max(100, 'Vorname ist zu lang.'),
-  lastName: z.string().min(1, 'Nachname ist erforderlich.').max(100, 'Nachname ist zu lang.'),
-  profileImageUrl: z.string().url('Ungültige URL.').nullable()
+  firstName: z.string().min(1, 'Vorname ist erforderlich.').max(100, 'Vorname ist zu lang.').optional(),
+  lastName: z.string().min(1, 'Nachname ist erforderlich.').max(100, 'Nachname ist zu lang.').optional(),
+  profileImageUrl: z.string().url('Ungültige URL.').nullable().optional()
 });
 
 export default defineEventHandler(async (event) => {
@@ -66,15 +66,19 @@ export default defineEventHandler(async (event) => {
       });
     }
 
+    // Build update object with only provided fields
+    const updateData: any = {
+      updatedAt: new Date()
+    };
+    
+    if (firstName !== undefined) updateData.firstName = firstName;
+    if (lastName !== undefined) updateData.lastName = lastName;
+    if (profileImageUrl !== undefined) updateData.profileImageUrl = profileImageUrl;
+
     // Update user profile
     await db
       .update(users)
-      .set({
-        firstName,
-        lastName,
-        profileImageUrl,
-        updatedAt: new Date()
-      })
+      .set(updateData)
       .where(eq(users.id, payload.userId));
 
     // Get updated user data

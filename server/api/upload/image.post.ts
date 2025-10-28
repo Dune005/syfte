@@ -115,6 +115,9 @@ export default defineEventHandler(async (event) => {
     // Generate unique filename
     const ext = path.extname(filename) || '.jpg';
     const uniqueFilename = `${type}-${payload.userId}-${Date.now()}-${randomUUID()}${ext}`;
+    
+    // Determine subdirectory based on type
+    const subdirectory = type === 'profile' ? 'profile' : 'goals';
 
     // Upload to FTP server
     const client = new Client();
@@ -129,16 +132,16 @@ export default defineEventHandler(async (event) => {
       
       await client.access(FTP_CONFIG);
       
-      // Ensure the images_sparziele directory exists in web root
-      await client.ensureDir('/htdocs/images_sparziele');
+      // Ensure the subdirectory exists in web root
+      await client.ensureDir(`/htdocs/images_sparziele/${subdirectory}`);
       
       // Upload file to FTP server
-      const remotePath = `/htdocs/images_sparziele/${uniqueFilename}`;
+      const remotePath = `/htdocs/images_sparziele/${subdirectory}/${uniqueFilename}`;
       const readableStream = Readable.from(fileBuffer);
       await client.uploadFrom(readableStream, remotePath);
       
       // Generate public URL
-      const publicUrl = `${IMAGE_BASE_URL}/${uniqueFilename}`;
+      const publicUrl = `${IMAGE_BASE_URL}/${subdirectory}/${uniqueFilename}`;
       console.log(publicUrl);
       
       return {
