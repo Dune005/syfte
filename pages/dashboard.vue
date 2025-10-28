@@ -271,7 +271,7 @@
           </div>
           <div class="stat-card">
             <h4>Streak</h4>
-            <p>{{ userStats.streak || 0 }} Tage</p>
+            <p>{{ userStreak.current || 0 }} Tage</p>
           </div>
         </div>
         
@@ -358,6 +358,7 @@ const profileSuccess = ref('')
 const isSavingProfile = ref(false)
 
 const userStats = ref(null)
+const userStreak = ref({ current: 0, longest: 0 })
 const currentGoalTarget = ref(0)
 
 const goals = ref([])
@@ -525,6 +526,10 @@ const updateProfileTitle = async () => {
     const meResponse = await $fetch('/api/auth/me')
     if (meResponse?.profile?.title) {
       userProfile.value.title = meResponse.profile.title
+    }
+    // Update streak data
+    if (meResponse?.profile?.streak) {
+      userStreak.value = meResponse.profile.streak
     }
     // Also update achievements list
     if (meResponse?.profile?.achievements) {
@@ -810,6 +815,11 @@ onMounted(async () => {
     // Set latest achievement as title
     if (meResponse?.profile?.title) {
       userProfile.value.title = meResponse.profile.title
+    }
+    
+    // Set streak data
+    if (meResponse?.profile?.streak) {
+      userStreak.value = meResponse.profile.streak
     }
     
     // Load achievements
