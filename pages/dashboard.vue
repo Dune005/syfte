@@ -113,25 +113,80 @@
     </div>
 
     <!-- Neues Sparziel Modal -->
-    <div v-if="showAddGoalModal" class="modal-overlay" @click="showAddGoalModal = false">
-      <div class="modal" @click.stop>
-        <h3>Neues Sparziel</h3>
-        <input 
-          v-model="newGoal.name" 
-          type="text" 
-          placeholder="Name des Sparziels"
-          class="modal-input"
-        />
-        <input 
-          v-model="newGoal.target" 
-          type="number" 
-          placeholder="Zielbetrag (CHF)"
-          class="modal-input"
-        />
-        <div class="modal-buttons">
-          <ButtonSecondary @click="showAddGoalModal = false">Abbrechen</ButtonSecondary>
-          <ButtonPrimary @click="addGoal">Erstellen</ButtonPrimary>
-        </div>
+    <div
+      v-if="showAddGoalModal"
+      class="modal-overlay"
+      @click="handleCloseAddGoalModal"
+    >
+      <div class="modal goal-modal" @click.stop>
+        <form class="goal-modal-form" @submit.prevent="addGoal">
+          <h3>Neues Sparziel</h3>
+          
+          <input
+            v-model="newGoal.name"
+            type="text"
+            placeholder="Titel des Ziels"
+            class="goal-modal-input"
+            autocomplete="off"
+          />
+
+          <input
+            v-model="newGoal.target"
+            type="text"
+            inputmode="decimal"
+            placeholder="Zielbetrag (CHF)"
+            class="goal-modal-input"
+            autocomplete="off"
+          />
+
+          <div
+            class="goal-modal-dropzone"
+            :class="{
+              'is-dragover': isDraggingGoalImage,
+              'has-image': !!goalImagePreview
+            }"
+            role="button"
+            tabindex="0"
+            @click="triggerGoalImageSelect"
+            @keydown="handleGoalImageKeydown"
+            @dragenter.prevent="handleGoalImageDragEnter"
+            @dragover.prevent="handleGoalImageDragEnter"
+            @dragleave.prevent="handleGoalImageDragLeave"
+            @drop.prevent="handleGoalImageDrop"
+          >
+            <input
+              ref="goalImageInput"
+              type="file"
+              accept="image/jpeg,image/jpg,image/png,image/webp"
+              class="sr-only"
+              @change="handleGoalImageChange"
+            />
+            <template v-if="goalImagePreview">
+              <div class="goal-modal-preview">
+                <img :src="goalImagePreview" alt="Vorschau Sparzielbild" />
+                <div class="goal-modal-preview-actions">
+                  <button type="button" @click.stop="clearGoalImage">Bild entfernen</button>
+                </div>
+              </div>
+            </template>
+            <template v-else>
+              <div class="goal-modal-dropzone-content">
+                <p>Bild hochladen oder hierher ziehen</p>
+                <span>Unterstützt JPG, PNG oder WebP (max. 5 MB)</span>
+              </div>
+            </template>
+          </div>
+
+          <p v-if="goalImageError" class="goal-modal-error">{{ goalImageError }}</p>
+          <p v-if="goalFormError" class="goal-modal-error">{{ goalFormError }}</p>
+
+          <ButtonPrimary type="submit">
+            {{ isSavingGoal ? 'Wird gespeichert...' : 'Sparziel hinzufügen' }}
+          </ButtonPrimary>
+          <button type="button" class="goal-modal-cancel" @click="handleCloseAddGoalModal">
+            Abbrechen
+          </button>
+        </form>
       </div>
     </div>
 
@@ -212,7 +267,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -240,9 +295,75 @@ const newGoal = ref({
   target: ''
 })
 
+const goalImageInput = ref(null)
+const goalImageFile = ref(null)
+const goalImagePreview = ref('')
+const goalImageError = ref('')
+const goalFormError = ref('')
+const isSavingGoal = ref(false)
+const isDraggingGoalImage = ref(false)
+
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024 // 5 MB
+
 // Methods
 const navigateToGoal = (goalId) => {
-  router.push(`/goal/${goalId}`)
+  router.push(`/goals/${goalId}`)
+}
+
+const normalizeAmount = (value) => {
+  if (typeof value === 'number') {
+    return value
+  }
+
+  if (typeof value === 'string') {
+    const parsed = parseFloat(value)
+    return Number.isFinite(parsed) ? parsed : 0
+  }
+
+  if (typeof value === 'bigint') {
+    try {
+      return Number(value)
+    } catch {
+      return 0
+    }
+  }
+
+  return 0
+}
+
+const fetchGoals = async () => {
+  try {
+    const dashboardResponse = await $fetch('/api/dashboard')
+
+    const mappedGoals = Array.isArray(dashboardResponse?.dashboard?.goals)
+      ? dashboardResponse.dashboard.goals.map(goal => ({
+          id: goal.id,
+          name: goal.title,
+          current: normalizeAmount(goal.savedChf),
+          target: normalizeAmount(goal.targetChf),
+          image: goal.imageUrl || '/images/syfte_Schaf/syfte_Schaf.png',
+          isFavorite: Boolean(goal.isFavorite)
+        }))
+      : []
+
+    goals.value = mappedGoals
+
+    const favoriteGoal = goals.value.find(g => g.isFavorite)
+    if (favoriteGoal) {
+      currentGoalTarget.value = favoriteGoal.target
+    } else if (goals.value.length > 0) {
+      currentGoalTarget.value = goals.value[0].target
+    } else {
+      currentGoalTarget.value = 0
+    }
+  } catch (error) {
+    console.error('Fehler beim Laden der Sparziele:', error)
+
+    if (goals.value.length === 0) {
+      currentGoalTarget.value = 0
+    }
+  }
 }
 
 const addQuickSave = async () => {
@@ -272,33 +393,198 @@ const addQuickSave = async () => {
   }
 }
 
+const clearGoalImage = () => {
+  if (goalImagePreview.value) {
+    URL.revokeObjectURL(goalImagePreview.value)
+  }
+
+  goalImagePreview.value = ''
+  goalImageFile.value = null
+  goalImageError.value = ''
+
+  if (goalImageInput.value) {
+    goalImageInput.value.value = ''
+  }
+}
+
+const resetGoalForm = () => {
+  newGoal.value = { name: '', target: '' }
+  goalFormError.value = ''
+  goalImageError.value = ''
+  isDraggingGoalImage.value = false
+  clearGoalImage()
+}
+
+const handleCloseAddGoalModal = () => {
+  showAddGoalModal.value = false
+  resetGoalForm()
+}
+
+const triggerGoalImageSelect = () => {
+  goalImageInput.value?.click()
+}
+
+const handleGoalImageKeydown = (event) => {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault()
+    triggerGoalImageSelect()
+  }
+}
+
+const handleGoalImageDragEnter = (event) => {
+  if (event?.dataTransfer) {
+    event.dataTransfer.dropEffect = 'copy'
+  }
+  isDraggingGoalImage.value = true
+}
+
+const handleGoalImageDragLeave = (event) => {
+  if (event?.currentTarget && event?.relatedTarget) {
+    const isStillInside = event.currentTarget.contains(event.relatedTarget)
+    if (isStillInside) {
+      return
+    }
+  }
+  isDraggingGoalImage.value = false
+}
+
+const processGoalImageFile = (file) => {
+  if (!file) return
+
+  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+    goalImageError.value = 'Bitte wähle ein JPG, PNG oder WebP Bild.'
+    return
+  }
+
+  if (file.size > MAX_IMAGE_SIZE) {
+    goalImageError.value = 'Das Bild darf maximal 5 MB groß sein.'
+    return
+  }
+
+  goalImageError.value = ''
+
+  if (goalImagePreview.value) {
+    URL.revokeObjectURL(goalImagePreview.value)
+  }
+
+  goalImageFile.value = file
+  goalImagePreview.value = URL.createObjectURL(file)
+}
+
+const handleGoalImageChange = (event) => {
+  const [file] = event.target.files || []
+  if (file) {
+    processGoalImageFile(file)
+  }
+}
+
+const handleGoalImageDrop = (event) => {
+  isDraggingGoalImage.value = false
+  const file = event.dataTransfer?.files?.[0]
+  if (file) {
+    processGoalImageFile(file)
+  }
+}
+
+const getErrorMessage = (error, fallback = 'Ein Fehler ist aufgetreten.') => {
+  if (!error) return fallback
+
+  const data = error.data || error.response?.data
+
+  if (data?.statusMessage) {
+    return data.statusMessage
+  }
+
+  const firstIssue = data?.data?.errors?.[0]
+  if (firstIssue?.message) {
+    return firstIssue.message
+  }
+
+  if (error.message) {
+    return error.message
+  }
+
+  return fallback
+}
+
 const addGoal = async () => {
-  if (!newGoal.value.name || !newGoal.value.target) return
+  if (isSavingGoal.value) return
+
+  const trimmedName = newGoal.value.name.trim()
+  const rawTarget = typeof newGoal.value.target === 'string'
+    ? newGoal.value.target.replace(',', '.')
+    : String(newGoal.value.target || '')
+  const targetValue = parseFloat(rawTarget)
+
+  if (!trimmedName) {
+    goalFormError.value = 'Bitte gib dem Sparziel einen Titel.'
+    return
+  }
+
+  if (Number.isNaN(targetValue) || targetValue <= 0) {
+    goalFormError.value = 'Bitte gib einen gültigen Zielbetrag ein.'
+    return
+  }
+
+  if (targetValue > 999999.99) {
+    goalFormError.value = 'Der Zielbetrag ist zu hoch. Maximal 999\'999.99 CHF.'
+    return
+  }
+
+  goalFormError.value = ''
+  goalImageError.value = ''
+
+  let shouldCloseModal = false
+  let imageUrl = null
   
   try {
+    isSavingGoal.value = true
+
+    if (goalImageFile.value) {
+      try {
+        const formData = new FormData()
+        formData.append('file', goalImageFile.value)
+        formData.append('type', 'goal')
+
+        const uploadResponse = await $fetch('/api/upload/image', {
+          method: 'POST',
+          body: formData
+        })
+
+        imageUrl = uploadResponse.imageUrl
+      } catch (uploadError) {
+        goalImageError.value = getErrorMessage(uploadError, 'Fehler beim Hochladen des Bildes.')
+        throw uploadError
+      }
+    }
+
     const response = await $fetch('/api/goals/create', {
       method: 'POST',
       body: {
-        title: newGoal.value.name,
-        targetChf: parseFloat(newGoal.value.target)
+        title: trimmedName,
+        targetChf: targetValue,
+        imageUrl: imageUrl || undefined
       }
     })
     
-    if (response.goal) {
-      goals.value.push({
-        id: response.goal.id,
-        name: response.goal.title,
-        current: parseFloat(response.goal.savedChf),
-        target: parseFloat(response.goal.targetChf),
-        image: response.goal.imageUrl || '/images/syfte_Schaf/syfte_Schaf.png',
-        isFavorite: response.goal.isFavorite
-      })
+    if (response?.goal || response?.success) {
+      await fetchGoals()
+      shouldCloseModal = true
+    } else {
+      goalFormError.value = 'Sparziel konnte nicht aktualisiert werden.'
     }
     
-    newGoal.value = { name: '', target: '' }
-    showAddGoalModal.value = false
   } catch (error) {
+    if (!goalImageError.value) {
+      goalFormError.value = getErrorMessage(error, 'Fehler beim Erstellen des Sparziels.')
+    }
     console.error('Fehler beim Erstellen des Sparziels:', error)
+  } finally {
+    isSavingGoal.value = false
+
+    if (shouldCloseModal) {
+      handleCloseAddGoalModal()
+    }
   }
 }
 
@@ -317,43 +603,37 @@ const logout = async () => {
 
 // Lifecycle
 onMounted(async () => {
+  await fetchGoals()
+  
   try {
-    // Lade die heutigen Ersparnisse
+    const dashboardResponse = await $fetch('/api/dashboard')
+    if (dashboardResponse?.dashboard?.user) {
+      const user = dashboardResponse.dashboard.user
+      userProfile.value.name = `${user.firstName} ${user.lastName}`
+    }
+  } catch (error) {
+    console.error('Fehler beim Laden der Benutzerdaten:', error)
+  }
+  
+  try {
     const savingsResponse = await $fetch('/api/savings/stats')
     todaySavings.value = savingsResponse.stats?.today?.amount || 0
     userStats.value = savingsResponse.stats
-    
-    // Lade die Sparziele
-    const goalsResponse = await $fetch('/api/goals/index')
-    goals.value = goalsResponse.goals.map(goal => ({
-      id: goal.id,
-      name: goal.title,
-      current: parseFloat(goal.savedChf),
-      target: parseFloat(goal.targetChf),
-      image: goal.imageUrl || '/images/syfte_Schaf/syfte_Schaf.png',
-      isFavorite: goal.isFavorite
-    }))
-    
-    // Setze das aktuelle Ziel (erstes Ziel oder Favorit)
-    const favoriteGoal = goals.value.find(g => g.isFavorite)
-    if (favoriteGoal) {
-      currentGoalTarget.value = favoriteGoal.target
-    } else if (goals.value.length > 0) {
-      currentGoalTarget.value = goals.value[0].target
-    }
-    
-    // Lade die Auszeichnungen
-    try {
-      const achievementsResponse = await $fetch('/api/achievements/index')
-      userProfile.value.achievements = achievementsResponse.achievements || []
-    } catch (error) {
-      console.error('Fehler beim Laden der Auszeichnungen:', error)
-      userProfile.value.achievements = []
-    }
-    
   } catch (error) {
-    console.error('Fehler beim Laden der Daten:', error)
+    console.error('Fehler beim Laden der Sparstatistiken:', error)
   }
+
+  try {
+    const achievementsResponse = await $fetch('/api/achievements/index')
+    userProfile.value.achievements = achievementsResponse.achievements || []
+  } catch (error) {
+    console.error('Fehler beim Laden der Auszeichnungen:', error)
+    userProfile.value.achievements = []
+  }
+})
+
+onBeforeUnmount(() => {
+  clearGoalImage()
 })
 </script>
 
@@ -646,6 +926,159 @@ onMounted(async () => {
 
 .modal-buttons button {
   flex: 1;
+}
+
+.goal-modal {
+  max-width: 440px;
+  padding: 32px 28px;
+}
+
+.goal-modal h3 {
+  font-size: 28px;
+  font-weight: 800;
+  color: #1E232C;
+  text-align: center;
+  margin: 0 0 24px 0;
+}
+
+.goal-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.goal-modal-input {
+  width: 100%;
+  height: 64px;
+  border-radius: 16px;
+  border: 1px solid #E4E9F2;
+  background: #F6F8FB;
+  padding: 0 20px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #1E232C;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.goal-modal-input:focus {
+  outline: none;
+  border-color: #35C2C1;
+  box-shadow: 0 0 0 3px rgba(53, 194, 193, 0.2);
+}
+
+.goal-modal-input::placeholder {
+  color: #8A97A6;
+}
+
+.goal-modal-dropzone {
+  border: 2px dashed #CAD3E0;
+  border-radius: 16px;
+  background: #F6F8FB;
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.goal-modal-dropzone-content p {
+  font-weight: 600;
+  font-size: 16px;
+  color: #1E232C;
+  margin: 0 0 8px 0;
+}
+
+.goal-modal-dropzone-content span {
+  font-size: 13px;
+  color: #8A97A6;
+}
+
+.goal-modal-dropzone.is-dragover {
+  border-color: #35C2C1;
+  background: rgba(53, 194, 193, 0.08);
+}
+
+.goal-modal-dropzone.has-image {
+  padding: 0;
+  border-style: solid;
+  border-color: transparent;
+  background: transparent;
+}
+
+.goal-modal-preview {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 14px;
+}
+
+.goal-modal-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.goal-modal-preview-actions {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+}
+
+.goal-modal-preview-actions button {
+  background: rgba(30, 35, 44, 0.85);
+  color: white;
+  border: none;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.goal-modal-preview-actions button:hover {
+  background: rgba(30, 35, 44, 1);
+}
+
+.goal-modal-error {
+  font-size: 13px;
+  font-weight: 500;
+  color: #D64848;
+  margin: -4px 0 0 0;
+  text-align: center;
+}
+
+.goal-modal-cancel {
+  background: none;
+  border: none;
+  color: #35C2C1;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 4px;
+  align-self: center;
+}
+
+.goal-modal-cancel:hover {
+  text-decoration: underline;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
 }
 
 /* No Goals Section */
