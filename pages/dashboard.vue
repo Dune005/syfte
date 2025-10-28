@@ -85,8 +85,29 @@
               </div>
             </div>
           </div>
-          <div class="goal-star" v-if="goal.isFavorite">
-            <Star :size="20" color="#FAC132" :fill="true" />
+          <div class="goal-star" @click.stop="toggleFavorite(goal)">
+            <svg 
+              v-if="goal.isFavorite"
+              width="20" 
+              height="20" 
+              viewBox="0 0 24 24" 
+              fill="#FAC132" 
+              stroke="#FAC132"
+              stroke-width="2"
+            >
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+            <svg 
+              v-else
+              width="20" 
+              height="20" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="#9CA3AF"
+              stroke-width="2"
+            >
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
           </div>
         </div>
       </div>
@@ -688,6 +709,34 @@ const addGoal = async () => {
   }
 }
 
+const toggleFavorite = async (goal) => {
+  try {
+    const response = await $fetch(`/api/goals/${goal.id}/favorite`, {
+      method: 'PUT'
+    })
+    
+    if (response?.success) {
+      // Aktualisiere den lokalen Status aller Ziele
+      goals.value.forEach(g => {
+        g.isFavorite = g.id === goal.id ? !g.isFavorite : false
+      })
+      
+      // Aktualisiere das aktuelle Ziel für Sparaktionen
+      const favoriteGoal = goals.value.find(g => g.isFavorite)
+      if (favoriteGoal) {
+        currentGoalTarget.value = favoriteGoal.target
+      } else if (goals.value.length > 0) {
+        currentGoalTarget.value = goals.value[0].target
+      } else {
+        currentGoalTarget.value = 0
+      }
+    }
+  } catch (error) {
+    console.error('Fehler beim Umschalten des Favoritenstatus:', error)
+    alert('Fehler beim Aktualisieren des Favoritenstatus.')
+  }
+}
+
 const logout = async () => {
   try {
     await $fetch('/api/auth/logout', {
@@ -1178,6 +1227,7 @@ const saveProfile = async ({ closeOnSuccess = true } = {}) => {
   cursor: pointer;
   transition: all 0.2s;
   position: relative;
+  overflow: visible;
 }
 
 .goal-card:hover {
@@ -1252,6 +1302,21 @@ const saveProfile = async ({ closeOnSuccess = true } = {}) => {
   position: absolute;
   top: 12px;
   right: 12px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(4px);
+}
+
+.goal-star:hover {
+  background: rgba(255, 255, 255, 0.95);
+  transform: scale(1.1);
+}
+
+.goal-star:active {
+  transform: scale(0.95);
 }
 
 /* Add Goal Button */
@@ -1894,6 +1959,12 @@ const saveProfile = async ({ closeOnSuccess = true } = {}) => {
   .goal-image {
     width: 60px;
     height: 60px;
+  }
+  
+  .goal-star {
+    top: 8px;
+    right: 8px;
+    padding: 3px;
   }
 
   .no-goals-content h2 {
