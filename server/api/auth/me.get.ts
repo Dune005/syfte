@@ -93,7 +93,12 @@ export default defineEventHandler(async (event) => {
       .from(userAchievements)
       .innerJoin(achievements, eq(userAchievements.achievementId, achievements.id))
       .where(eq(userAchievements.userId, payload.userId))
-      .orderBy(desc(userAchievements.awardedAt));
+      .orderBy(userAchievements.awardedAt); // Oldest first (ASC)
+
+    // Get latest achievement name as profile title (last in array now)
+    const latestAchievementTitle = userAchievementsList.length > 0 
+      ? userAchievementsList[userAchievementsList.length - 1].name 
+      : null;
 
     return {
       success: true,
@@ -108,6 +113,7 @@ export default defineEventHandler(async (event) => {
         createdAt: user.createdAt
       },
       profile: {
+        title: latestAchievementTitle,
         currentGoal: currentGoal,
         streak: overallStreak ? {
           current: overallStreak.currentCount,

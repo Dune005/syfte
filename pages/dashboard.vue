@@ -246,7 +246,7 @@
             </div>
           </div>
           <div class="profile-details">
-            <p class="profile-title">{{ userProfile.title }}</p>
+            <p class="profile-title">{{ userProfile.title || 'Spar-Lahm' }}</p>
 
             <div class="profile-name-row">
               <div class="name-field">
@@ -506,11 +506,35 @@ const addActionToGoal = async (actionId, goalId) => {
     if (goal && response.goal) {
       goal.current = parseFloat(response.goal.savedChf)
     }
+
+    // Check if new achievements were unlocked and update profile title
+    if (response.achievements?.newlyUnlocked?.length > 0) {
+      await updateProfileTitle()
+    }
   } catch (error) {
     console.error('Fehler beim Hinzufügen der Sparaktion:', error)
     alert('Fehler beim Hinzufügen der Sparaktion.')
   } finally {
     executingAction.value = null
+  }
+}
+
+// Update profile title with latest achievement
+const updateProfileTitle = async () => {
+  try {
+    const meResponse = await $fetch('/api/auth/me')
+    if (meResponse?.profile?.title) {
+      userProfile.value.title = meResponse.profile.title
+    }
+    // Also update achievements list
+    if (meResponse?.profile?.achievements) {
+      userProfile.value.achievements = meResponse.profile.achievements.map(achievement => ({
+        ...achievement,
+        unlocked: true
+      }))
+    }
+  } catch (error) {
+    console.error('Fehler beim Aktualisieren des Profil-Titels:', error)
   }
 }
 
@@ -780,14 +804,21 @@ onMounted(async () => {
   }
 
   try {
-    // Load only earned achievements
-    const earnedAchievementsResponse = await $fetch('/api/achievements/earned')
-    userProfile.value.achievements = (earnedAchievementsResponse.achievements || []).map(achievement => ({
+    // Load user profile data with achievements
+    const meResponse = await $fetch('/api/auth/me')
+    
+    // Set latest achievement as title
+    if (meResponse?.profile?.title) {
+      userProfile.value.title = meResponse.profile.title
+    }
+    
+    // Load achievements
+    userProfile.value.achievements = (meResponse?.profile?.achievements || []).map(achievement => ({
       ...achievement,
       unlocked: true
     }))
   } catch (error) {
-    console.error('Fehler beim Laden der Auszeichnungen:', error)
+    console.error('Fehler beim Laden der Profildaten:', error)
     userProfile.value.achievements = []
   }
 })
