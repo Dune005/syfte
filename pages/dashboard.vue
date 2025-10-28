@@ -263,7 +263,11 @@
         <!-- Auszeichnungen -->
         <div class="achievements-section">
           <h2>Deine Auszeichnungen</h2>
-          <div class="achievements-grid">
+          <div v-if="userProfile.achievements.length === 0" class="no-achievements">
+            <p>Du hast noch keine Auszeichnungen freigeschaltet.</p>
+            <p class="no-achievements-hint">Spare fleissig weiter, um deine ersten Erfolge zu erreichen!</p>
+          </div>
+          <div v-else class="achievements-grid">
             <div
               v-for="achievement in userProfile.achievements"
               :key="achievement.id"
@@ -271,7 +275,7 @@
               :class="{ 'unlocked': achievement.unlocked }"
             >
               <div class="achievement-icon">
-                <img :src="achievement.icon" :alt="achievement.name" />
+                <img :src="achievement.imageUrl" :alt="achievement.name" />
               </div>
               <div class="achievement-info">
                 <h4>{{ achievement.name }}</h4>
@@ -676,8 +680,12 @@ onMounted(async () => {
   }
 
   try {
-    const achievementsResponse = await $fetch('/api/achievements/earned')
-    userProfile.value.achievements = achievementsResponse.achievements || []
+    // Load only earned achievements
+    const earnedAchievementsResponse = await $fetch('/api/achievements/earned')
+    userProfile.value.achievements = (earnedAchievementsResponse.achievements || []).map(achievement => ({
+      ...achievement,
+      unlocked: true
+    }))
   } catch (error) {
     console.error('Fehler beim Laden der Auszeichnungen:', error)
     userProfile.value.achievements = []
@@ -1436,6 +1444,25 @@ const saveProfile = async ({ closeOnSuccess = true } = {}) => {
   font-size: 30px;
   color: #1E232C;
   margin: 0 0 16px 0;
+}
+
+.no-achievements {
+  text-align: center;
+  padding: 32px 16px;
+  background: #F0F2F5;
+  border-radius: 12px;
+}
+
+.no-achievements p {
+  font-family: 'Urbanist', sans-serif;
+  font-size: 16px;
+  color: #666;
+  margin: 0 0 8px 0;
+}
+
+.no-achievements-hint {
+  font-size: 14px;
+  color: #999;
 }
 
 .achievements-grid {
