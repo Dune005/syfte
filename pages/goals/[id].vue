@@ -2,9 +2,7 @@
   <div class="goal-detail">
     <!-- Back Button -->
     <div class="back-button" @click="goBack">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <path d="M15 18l-6-6 6-6" stroke="#35C2C1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
+      <ChevronLeft :size="24" color="#35C2C1" />
       <span>Zurück</span>
     </div>
 
@@ -53,10 +51,7 @@
         <div class="actions-header">
           <h2>Sparaktionen</h2>
           <button class="add-action-btn" @click="showCreateActionModal = true">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <circle cx="10" cy="10" r="8" fill="#35C2C1"/>
-              <path d="M10 6v8M6 10h8" stroke="white" stroke-width="2" stroke-linecap="round"/>
-            </svg>
+            <Plus :size="20" color="#35C2C1" />
             <span>Neue Aktion</span>
           </button>
         </div>
@@ -74,12 +69,8 @@
           >
             <div class="action-icon">
               <div class="icon-circle">
-                <svg v-if="!successActions.includes(action.id)" width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 2v20M2 12h20" stroke="#35C2C1" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-                <svg v-else width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M20 6L9 17l-5-5" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
+                <CircleFadingPlus v-if="!successActions.includes(action.id)" :size="24" color="#35C2C1" />
+                <Check v-else :size="24" color="#10B981" />
               </div>
             </div>
             <div class="action-content">
@@ -166,6 +157,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { ChevronLeft, Plus, Check, CircleFadingPlus } from 'lucide-vue-next'
 
 const router = useRouter()
 const route = useRoute()

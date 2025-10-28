@@ -33,12 +33,8 @@
           >
             <div class="action-icon">
               <div class="icon-circle">
-                <svg v-if="!successActions.includes(action.id)" width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 2v20M2 12h20" stroke="#35C2C1" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-                <svg v-else width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M20 6L9 17l-5-5" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
+                <CircleFadingPlus v-if="!successActions.includes(action.id)" :size="24" color="#35C2C1" />
+                <Check v-else :size="24" color="#10B981" />
               </div>
             </div>
             <div class="action-content">
@@ -90,9 +86,7 @@
             </div>
           </div>
           <div class="goal-star" v-if="goal.isFavorite">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="#FAC132">
-              <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
-            </svg>
+            <Star :size="20" color="#FAC132" :fill="true" />
           </div>
         </div>
       </div>
@@ -100,10 +94,7 @@
       <!-- Plus Button für neues Sparziel -->
       <div class="add-goal-button" @click="showAddGoalModal = true">
         <div class="add-circle">
-          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-            <circle cx="16" cy="16" r="14" fill="#35C2C1" stroke="white" stroke-width="2"/>
-            <path d="M16 10v12M10 16h12" stroke="white" stroke-width="3" stroke-linecap="round"/>
-          </svg>
+          <Plus :size="32" color="white" />
         </div>
       </div>
     </div>
@@ -115,10 +106,7 @@
         <p>Erstelle dein erstes Sparziel, um mit dem Sparen zu beginnen.</p>
         <div class="add-goal-button-centered" @click="showAddGoalModal = true">
           <div class="add-circle">
-            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-              <circle cx="16" cy="16" r="14" fill="#35C2C1" stroke="white" stroke-width="2"/>
-              <path d="M16 10v12M10 16h12" stroke="white" stroke-width="3" stroke-linecap="round"/>
-            </svg>
+            <Plus :size="32" color="white" />
           </div>
           <span>Erstes Sparziel erstellen</span>
         </div>
@@ -317,6 +305,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { Plus, CirclePlus, Check, CircleFadingPlus, Star } from 'lucide-vue-next'
 
 const router = useRouter()
 
@@ -1016,8 +1005,8 @@ const saveProfile = async ({ closeOnSuccess = true } = {}) => {
 }
 
 .icon-circle {
-  width: 50px;
-  height: 50px;
+  /* width: 50px;
+  height: 50px; */
   border-radius: 50%;
   background: #F0F9F8;
   display: flex;
