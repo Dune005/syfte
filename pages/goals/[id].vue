@@ -66,15 +66,34 @@
             v-for="action in assignedActions"
             :key="action.id"
             class="action-card"
+            :class="{ 
+              'executing': executingAction === action.id,
+              'success': successActions.includes(action.id)
+            }"
             @click="executeAction(action)"
           >
-            <div class="action-image">
-              <img :src="action.imageUrl || '/images/syfte_Schaf/syfte_Schaf.png'" :alt="action.title" />
+            <div class="action-icon">
+              <div class="icon-circle">
+                <svg v-if="!successActions.includes(action.id)" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2v20M2 12h20" stroke="#35C2C1" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <svg v-else width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M20 6L9 17l-5-5" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
             </div>
             <div class="action-content">
               <h3>{{ action.title }}</h3>
               <p v-if="action.description" class="action-description">{{ action.description }}</p>
               <div class="action-amount">{{ formatCurrency(action.defaultChf) }}</div>
+            </div>
+            <div class="action-status">
+              <div v-if="executingAction === action.id" class="executing-indicator">
+                <div class="spinner"></div>
+              </div>
+              <div v-if="successActions.includes(action.id)" class="success-indicator">
+                <span>Gebucht!</span>
+              </div>
             </div>
           </div>
         </div>
@@ -158,6 +177,8 @@ const assignedActions = ref([])
 const showCreateActionModal = ref(false)
 const isCreatingAction = ref(false)
 const actionError = ref('')
+const executingAction = ref(null)
+const successActions = ref([])
 
 const newAction = ref({
   title: '',
@@ -192,6 +213,10 @@ const fetchGoalDetails = async () => {
 }
 
 const executeAction = async (action) => {
+  if (executingAction.value === action.id) return
+  
+  executingAction.value = action.id
+  
   try {
     const response = await $fetch('/api/savings/add-with-action', {
       method: 'POST',
@@ -203,11 +228,21 @@ const executeAction = async (action) => {
     })
     
     if (response.success) {
+      // Zeige Erfolg-Feedback
+      successActions.value.push(action.id)
+      
+      // Entferne den Erfolg-Status nach 2 Sekunden
+      setTimeout(() => {
+        successActions.value = successActions.value.filter(id => id !== action.id)
+      }, 2000)
+      
       // Aktualisiere den Fortschritt des Ziels
       await fetchGoalDetails()
     }
   } catch (error) {
     console.error('Fehler beim Ausführen der Sparaktion:', error)
+  } finally {
+    executingAction.value = null
   }
 }
 
@@ -469,10 +504,12 @@ onMounted(() => {
   border-radius: 16px;
   padding: 20px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   gap: 16px;
+  position: relative;
+  overflow: hidden;
 }
 
 .action-card:hover {
@@ -481,18 +518,71 @@ onMounted(() => {
   border-color: #35C2C1;
 }
 
-.action-image {
-  width: 60px;
-  height: 60px;
-  border-radius: 12px;
-  overflow: hidden;
+.action-card.executing {
+  border-color: #35C2C1;
+  background: linear-gradient(135deg, rgba(53, 194, 193, 0.05) 0%, rgba(53, 194, 193, 0.1) 100%);
+}
+
+.action-card.success {
+  border-color: #10B981;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.1) 100%);
+  animation: successPulse 0.6s ease-out;
+}
+
+@keyframes successPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0.1);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.action-icon {
   flex-shrink: 0;
 }
 
-.action-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.icon-circle {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #F0F9F8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.action-card:hover .icon-circle {
+  background: #E6F7F6;
+  transform: scale(1.05);
+}
+
+.action-card.executing .icon-circle {
+  background: #E6F7F6;
+  animation: pulse 1.5s infinite;
+}
+
+.action-card.success .icon-circle {
+  background: #D1FAE5;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(53, 194, 193, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(53, 194, 193, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(53, 194, 193, 0);
+  }
 }
 
 .action-content {
@@ -517,6 +607,65 @@ onMounted(() => {
   font-size: 20px;
   font-weight: 800;
   color: #35C2C1;
+  transition: all 0.3s ease;
+}
+
+.action-card.success .action-amount {
+  color: #10B981;
+  transform: scale(1.05);
+}
+
+.action-status {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+}
+
+.executing-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #E4E9F2;
+  border-top: 3px solid #35C2C1;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.success-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  animation: fadeInScale 0.3s ease-out;
+}
+
+.success-indicator span {
+  font-size: 14px;
+  font-weight: 700;
+  color: #10B981;
+}
+
+@keyframes fadeInScale {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .no-actions {
@@ -686,6 +835,16 @@ onMounted(() => {
   
   .action-card {
     padding: 16px;
+    min-height: 100px;
+  }
+  
+  .action-status {
+    width: 60px;
+  }
+  
+  .icon-circle {
+    width: 50px;
+    height: 50px;
   }
 }
 
@@ -704,6 +863,28 @@ onMounted(() => {
   
   .progress-percentage {
     font-size: 24px;
+  }
+  
+  .action-card {
+    padding: 12px;
+    min-height: 90px;
+  }
+  
+  .action-content h3 {
+    font-size: 16px;
+  }
+  
+  .action-amount {
+    font-size: 18px;
+  }
+  
+  .icon-circle {
+    width: 45px;
+    height: 45px;
+  }
+  
+  .action-status {
+    width: 50px;
   }
 }
 </style>
