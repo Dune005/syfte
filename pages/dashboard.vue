@@ -1728,19 +1728,7 @@ const saveProfile = async ({ closeOnSuccess = true } = {}) => {
 }
 
 .profile-avatar {
-  width: 128px;
-  height: 128px;
-  border-radius: 64px;
-  overflow: hidden;
-  border: 4px solid white;
-  box-shadow: 0 8px 14px -2px rgba(0, 0, 0, 0.25);
   margin-bottom: 16px;
-}
-
-.profile-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
 }
 
 .profile-details {
@@ -1942,9 +1930,10 @@ const saveProfile = async ({ closeOnSuccess = true } = {}) => {
   position: relative;
   width: 120px;
   height: 120px;
-  border-radius: 999px;
+  border-radius: 50%;
   overflow: hidden;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  border: 4px solid white;
+  box-shadow: 0 8px 14px -2px rgba(0, 0, 0, 0.25);
 }
 
 .avatar-wrapper .avatar-img {
