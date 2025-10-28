@@ -2,6 +2,7 @@ import { eq, and } from 'drizzle-orm';
 import { db } from '../../../utils/database/connection';
 import { achievements, userAchievements } from '../../../utils/database/schema';
 import { verifyJWT, getAuthCookie } from '../../../utils/auth';
+import { validateAchievementCriteria } from '../../../utils/achievements';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -72,9 +73,15 @@ export default defineEventHandler(async (event) => {
       };
     }
 
-    // TODO: Implement achievement criteria validation
-    // This would check if user actually meets the criteria for this achievement
-    // For now, we'll allow manual claiming for testing purposes
+    // Validate achievement criteria
+    const validation = await validateAchievementCriteria(payload.userId, parseInt(achievementId));
+    
+    if (!validation.isValid) {
+      throw createError({
+        statusCode: 403,
+        statusMessage: validation.reason || 'Kriterien für dieses Achievement nicht erfüllt.'
+      });
+    }
 
     // Award the achievement
     await db

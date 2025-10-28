@@ -34,7 +34,7 @@
       </div>
 
       <!-- Password Input -->
-      <div class="input-group">
+      <div v-if="!successMessage" class="input-group">
         <input
           type="password"
           id="newPassword"
@@ -47,7 +47,7 @@
       </div>
 
       <!-- Confirm Password Input -->
-      <div class="input-group">
+      <div v-if="!successMessage" class="input-group">
         <input
           type="password"
           id="confirmPassword"
@@ -60,7 +60,7 @@
       </div>
 
       <!-- Password Requirements -->
-      <div class="password-requirements">
+      <div v-if="!successMessage" class="password-requirements">
         <p>Passwort muss enthalten:</p>
         <ul>
           <li :class="{ valid: passwordRequirements.length }">Mindestens 8 Zeichen</li>
@@ -71,7 +71,7 @@
       </div>
 
       <!-- Submit Button -->
-      <div class="submit-button-wrapper">
+      <div v-if="!successMessage" class="submit-button-wrapper">
         <ButtonPrimary @click="handleSubmit" :disabled="isLoading || !token">
           {{ isLoading ? 'Wird gespeichert...' : 'Passwort aktualisieren' }}
         </ButtonPrimary>

@@ -2,6 +2,7 @@ import { eq, and } from 'drizzle-orm';
 import { db } from '../../../utils/database/connection';
 import { goals } from '../../../utils/database/schema';
 import { verifyJWT, getAuthCookie } from '../../../utils/auth';
+import { checkAndAwardAchievements } from '../../../utils/achievements';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -80,14 +81,18 @@ export default defineEventHandler(async (event) => {
       .where(eq(goals.id, parseInt(goalId)))
       .limit(1);
 
-    // TODO: Trigger achievement check for goal completion
-    // TODO: Send celebration notification
+    // Check for newly unlocked achievements (especially goal completion achievements)
+    const newAchievements = await checkAndAwardAchievements(payload.userId);
 
     return {
       success: true,
       message: 'Herzlichen Glückwunsch! Sparziel erreicht! 🎉',
       goal: completedGoal[0],
-      alreadyCompleted: false
+      alreadyCompleted: false,
+      achievements: {
+        newlyUnlocked: newAchievements,
+        count: newAchievements.length
+      }
     };
 
   } catch (error: any) {

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { db } from '../../utils/database/connection';
 import { users, goals, savings, actions } from '../../utils/database/schema';
 import { verifyJWT, getAuthCookie } from '../../utils/auth';
+import { checkAndAwardAchievements } from '../../utils/achievements';
 
 // Validation schema
 const addSavingWithActionSchema = z.object({
@@ -150,6 +151,9 @@ export default defineEventHandler(async (event) => {
     const savedAmount = parseFloat(updatedGoal!.savedChf.toString());
     const progressPercentage = targetAmount > 0 ? Math.min((savedAmount / targetAmount) * 100, 100) : 0;
 
+    // Check for newly unlocked achievements
+    const newAchievements = await checkAndAwardAchievements(payload.userId);
+
     return {
       success: true,
       message: `"${action.title}" erfolgreich zu "${goal.title}" hinzugefügt (CHF ${savingAmount}).`,
@@ -167,6 +171,10 @@ export default defineEventHandler(async (event) => {
         targetChf: updatedGoal!.targetChf,
         progressPercentage: Math.round(progressPercentage * 100) / 100,
         isCompleted: savedAmount >= targetAmount
+      },
+      achievements: {
+        newlyUnlocked: newAchievements,
+        count: newAchievements.length
       }
     };
 

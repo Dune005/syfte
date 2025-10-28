@@ -26,7 +26,7 @@
           type="email"
           @keyup.enter="onLogin"
           id="email"
-          placeholder="E-Mail"
+          placeholder="E-Mail / Benutzername"
           class="input-field"
           :aria-invalid="fieldErrors.email ? 'true' : 'false'"
         />
