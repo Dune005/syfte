@@ -90,6 +90,30 @@ Das Designkonzept unterstützt die Syfte-Vision "Sparen. Motivierend. Einfach." 
 5. WHEN Icons und Bilder auf Retina-Displays angezeigt werden THEN SHALL das System SVG-Format priorisieren oder hochauflösende Bitmap-Versionen bereitstellen
 6. WHEN Asset-Loading auf langsamen Verbindungen stattfindet THEN SHALL das System lazy loading und progressive enhancement implementieren
 
+### Requirement 8: Lucide Icons Integration
+
+**User Story:** Als Entwickler möchte ich Lucide Icons in der Syfte App verwenden, damit ich konsistente und moderne Icons für die Benutzeroberfläche nutzen kann.
+
+#### Acceptance Criteria
+
+1. WHEN Lucide Icons in Vue Komponenten verwendet werden THEN SHALL das System diese über `import { IconName } from 'lucide-vue-next'` importieren
+2. WHEN Icons mit unterschiedlichen Zuständen (z.B. Favorit/Nicht-Favorit) benötigt werden THEN SHALL das System entweder:
+   - Bedingte Darstellung mit `v-if/v-else` und unterschiedlichen Icon-Komponenten
+   - Dynamische Klassen zur Steuerung von Farbe und Füllstatus
+   - Direkte SVG-Implementierung bei komplexen Füllanforderungen
+3. WHEN Icons angepasst werden müssen THEN SHALL das System folgende Attribute unterstützen:
+   - `size` für die Icon-Größe (in Pixel)
+   - `color` für die Icon-Farbe
+   - `fill` für gefüllte/nicht gefüllte Darstellung
+   - `stroke-width` für die Linienstärke
+4. WHEN Icons nicht wie erwartet dargestellt werden THEN SHALL das System die Dokumentation unter https://lucide.dev/icons/ konsultieren
+5. WHEN ein spezifisches Icon benötigt wird THEN SHALL das Entwicklerteam den genauen Icon-Namen klären, bevor die Implementierung erfolgt
+6. WHEN Icons für mobile Touch-Interaktionen verwendet werden THEN SHALL das System ausreichend große Touch-Bereiche (mindestens 44x44px) um die Icons herum bereitstellen
+7. WHEN Icons in verschiedenen Zuständen angezeigt werden THEN SHALL das System konsistente Farben verwenden:
+   - syfte-grün (#35C2C1) für primäre Aktionen
+   - Gold (#FAC132) für Favoriten und besondere Status
+   - Grau (#9CA3AF) für inaktive Zustände
+
 ## Non-Functional Requirements
 
 ### Code Architecture and Modularity
