@@ -201,11 +201,75 @@
         <!-- Profil Info -->
         <div class="profile-info">
           <div class="profile-avatar">
-            <img src="/images/syfte_Schaf/syfte_Schaf_happy.png" alt="Profilbild" />
+            <div class="avatar-wrapper">
+              <img
+                class="avatar-img"
+                :src="profileImagePreview || currentUser?.profileImageUrl || '/images/syfte_Schaf/syfte_Schaf_happy.png'"
+                alt="Profilbild"
+              />
+              <button type="button" class="edit-overlay" @click="triggerProfileImageSelect" aria-label="Profilbild bearbeiten">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z" fill="#fff"/>
+                </svg>
+              </button>
+
+              <!-- hidden file input for avatar selection (kept here so clicking overlay opens it) -->
+              <input
+                ref="profileImageInput"
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+                class="sr-only"
+                @change="handleProfileImageChange"
+              />
+            </div>
           </div>
           <div class="profile-details">
-            <h3>{{ userProfile.name }}</h3>
-            <p>{{ userProfile.title }}</p>
+            <p class="profile-title">{{ userProfile.title }}</p>
+
+            <div class="profile-name-row">
+              <div class="name-field">
+                <template v-if="!editModeFirstName">
+                  <span class="name-text">{{ currentUser?.firstName || editFirstName || '' }}</span>
+                  <button type="button" class="name-edit-btn" @click="editModeFirstName = true" aria-label="Vorname bearbeiten">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z" fill="#1E232C"/>
+                    </svg>
+                  </button>
+                </template>
+                <template v-else>
+                  <input
+                    class="name-input"
+                    ref="firstNameInput"
+                    v-model="editFirstName"
+                    @keyup.enter="finishEdit('first')"
+                    @blur="finishEdit('first')"
+                  />
+                </template>
+              </div>
+
+              <div class="name-field">
+                <template v-if="!editModeLastName">
+                  <span class="name-text">{{ currentUser?.lastName || editLastName || '' }}</span>
+                  <button type="button" class="name-edit-btn" @click="editModeLastName = true" aria-label="Nachname bearbeiten">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z" fill="#1E232C"/>
+                    </svg>
+                  </button>
+                </template>
+                <template v-else>
+                  <input
+                    class="name-input"
+                    ref="lastNameInput"
+                    v-model="editLastName"
+                    @keyup.enter="finishEdit('last')"
+                    @blur="finishEdit('last')"
+                  />
+                </template>
+              </div>
+            </div>
+
+            <p v-if="profileError" class="profile-error">{{ profileError }}</p>
+            <p v-if="profileSuccess" class="profile-success">{{ profileSuccess }}</p>
           </div>
         </div>
 
@@ -258,7 +322,10 @@
 
         <!-- Buttons -->
         <div class="profile-buttons">
-          <ButtonSecondary @click="showProfileModal = false">Schliessen</ButtonSecondary>
+          <ButtonSecondary @click="showProfileModal = false">Abbrechen</ButtonSecondary>
+          <ButtonPrimary @click="saveProfile" :disabled="isSavingProfile">
+            {{ isSavingProfile ? 'Speichern...' : 'Speichern' }}
+          </ButtonPrimary>
           <ButtonPrimary @click="logout">Logout</ButtonPrimary>
         </div>
       </div>
@@ -267,7 +334,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -284,6 +351,22 @@ const userProfile = ref({
   title: 'Herdenführer',
   achievements: []
 })
+
+// Full user object from dashboard / API
+const currentUser = ref(null)
+
+// Profile edit state
+const editFirstName = ref('')
+const editLastName = ref('')
+const editProfileImageUrl = ref('')
+const profileImageInput = ref(null)
+const profileImageFile = ref(null)
+const profileImagePreview = ref('')
+const profileError = ref('')
+const profileSuccess = ref('')
+const isSavingProfile = ref(false)
+const editModeFirstName = ref(false)
+const editModeLastName = ref(false)
 
 const userStats = ref(null)
 const currentGoalTarget = ref(0)
@@ -593,7 +676,7 @@ const logout = async () => {
     await $fetch('/api/auth/logout', {
       method: 'POST'
     })
-    await router.push('/login')
+    await router.push('/')
   } catch (error) {
     console.error('Fehler beim Logout:', error)
     // Bei Fehler trotzdem zur Login-Seite weiterleiten
@@ -609,7 +692,15 @@ onMounted(async () => {
     const dashboardResponse = await $fetch('/api/dashboard')
     if (dashboardResponse?.dashboard?.user) {
       const user = dashboardResponse.dashboard.user
+      currentUser.value = user
       userProfile.value.name = `${user.firstName} ${user.lastName}`
+      // populate profile image if available
+      if (user.profileImageUrl) {
+        editProfileImageUrl.value = user.profileImageUrl
+        profileImagePreview.value = user.profileImageUrl
+      }
+      editFirstName.value = user.firstName || ''
+      editLastName.value = user.lastName || ''
     }
   } catch (error) {
     console.error('Fehler beim Laden der Benutzerdaten:', error)
@@ -624,7 +715,7 @@ onMounted(async () => {
   }
 
   try {
-    const achievementsResponse = await $fetch('/api/achievements/index')
+    const achievementsResponse = await $fetch('/api/achievements/earned')
     userProfile.value.achievements = achievementsResponse.achievements || []
   } catch (error) {
     console.error('Fehler beim Laden der Auszeichnungen:', error)
@@ -634,7 +725,152 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   clearGoalImage()
+  // revoke profile preview blob if any
+  if (profileImagePreview.value && profileImageFile.value) {
+    try { URL.revokeObjectURL(profileImagePreview.value) } catch (e) {}
+  }
 })
+
+// When opening the profile modal, ensure edit fields reflect the current user
+watch(showProfileModal, (val) => {
+  if (val) {
+    profileError.value = ''
+    profileSuccess.value = ''
+    if (currentUser.value) {
+      editFirstName.value = currentUser.value.firstName || ''
+      editLastName.value = currentUser.value.lastName || ''
+      editProfileImageUrl.value = currentUser.value.profileImageUrl || ''
+      profileImagePreview.value = currentUser.value.profileImageUrl || ''
+      profileImageFile.value = null
+    }
+  }
+})
+
+const triggerProfileImageSelect = () => {
+  profileImageInput.value?.click()
+}
+
+const clearProfileImage = () => {
+  if (profileImagePreview.value && profileImageFile.value) {
+    try { URL.revokeObjectURL(profileImagePreview.value) } catch (e) {}
+  }
+  profileImagePreview.value = ''
+  profileImageFile.value = null
+  editProfileImageUrl.value = ''
+}
+
+const processProfileImageFile = (file) => {
+  if (!file) return
+
+  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+    profileError.value = 'Bitte wähle ein JPG, PNG oder WebP Bild.'
+    return
+  }
+
+  if (file.size > MAX_IMAGE_SIZE) {
+    profileError.value = 'Das Bild darf maximal 5 MB groß sein.'
+    return
+  }
+
+  profileError.value = ''
+
+  if (profileImagePreview.value && profileImageFile.value) {
+    URL.revokeObjectURL(profileImagePreview.value)
+  }
+
+  profileImageFile.value = file
+  profileImagePreview.value = URL.createObjectURL(file)
+}
+
+const handleProfileImageChange = (event) => {
+  const [file] = event.target.files || []
+  if (file) {
+    processProfileImageFile(file)
+  }
+}
+
+const saveProfile = async ({ closeOnSuccess = true } = {}) => {
+  if (isSavingProfile.value) return
+
+  profileError.value = ''
+  profileSuccess.value = ''
+
+  const firstNameTrim = (editFirstName.value || '').trim()
+  const lastNameTrim = (editLastName.value || '').trim()
+
+  if (!firstNameTrim || !lastNameTrim) {
+    profileError.value = 'Vor- und Nachname dürfen nicht leer sein.'
+    return
+  }
+
+  isSavingProfile.value = true
+
+  try {
+  let imageUrl = editProfileImageUrl.value || null
+
+    if (profileImageFile.value) {
+      // upload image first
+      const formData = new FormData()
+      formData.append('file', profileImageFile.value)
+      formData.append('type', 'profile')
+
+      const uploadResponse = await $fetch('/api/upload/image', {
+        method: 'POST',
+        body: formData
+      })
+
+      imageUrl = uploadResponse.imageUrl || null
+    }
+
+    const response = await $fetch('/api/profile/update', {
+      method: 'PUT',
+      body: {
+        firstName: firstNameTrim,
+        lastName: lastNameTrim,
+        profileImageUrl: imageUrl
+      }
+    })
+
+    if (response?.success) {
+      profileSuccess.value = response.message || 'Profil erfolgreich aktualisiert.'
+      // update local user state
+      currentUser.value = response.user
+      userProfile.value.name = `${response.user.firstName} ${response.user.lastName}`
+      profileImagePreview.value = response.user.profileImageUrl || ''
+      // close modal after short delay if requested
+      if (closeOnSuccess) {
+        setTimeout(() => { showProfileModal.value = false }, 600)
+      }
+    } else {
+      profileError.value = response?.message || 'Profil konnte nicht aktualisiert werden.'
+    }
+  } catch (error) {
+    console.error('Fehler beim Speichern des Profils:', error)
+    profileError.value = getErrorMessage(error, 'Fehler beim Aktualisieren des Profils.')
+  } finally {
+    isSavingProfile.value = false
+  }
+}
+
+const finishEdit = async (which) => {
+  // If nothing changed, just close the edit mode
+  if (which === 'first') {
+    if ((editFirstName.value || '').trim() === (currentUser.value?.firstName || '')) {
+      editModeFirstName.value = false
+      return
+    }
+    editModeFirstName.value = false
+  } else {
+    if ((editLastName.value || '').trim() === (currentUser.value?.lastName || '')) {
+      editModeLastName.value = false
+      return
+    }
+    editModeLastName.value = false
+  }
+
+  // Save inline without closing the modal
+  await saveProfile({ closeOnSuccess: false })
+}
 </script>
 
 <style scoped>
@@ -1337,6 +1573,71 @@ onBeforeUnmount(() => {
 
 .profile-image:hover {
   transform: scale(1.05);
+}
+
+/* Avatar wrapper inside profile modal */
+.avatar-wrapper {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  border-radius: 999px;
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+}
+
+.avatar-wrapper .avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.avatar-wrapper .edit-overlay {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  background: rgba(0,0,0,0.6);
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  cursor: pointer;
+}
+
+.avatar-wrapper:hover .edit-overlay {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.profile-image-upload {
+  margin-top: 12px;
+}
+
+.profile-image-url {
+  width: calc(100% - 140px);
+  padding: 8px 10px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+}
+
+.profile-image-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.profile-image-preview img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-top: 8px;
 }
 
 /* Responsive */
