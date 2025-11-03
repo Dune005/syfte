@@ -161,7 +161,7 @@
           </div>
           <div class="user-actions">
             <button
-              @click="removeFriend(friend.user.id, friend.friendshipId)"
+              @click="removeFriend(friend.user.id, friend.friendshipId, friend.user.username)"
               class="btn-remove"
               :disabled="removingFriend === friend.friendshipId"
             >
@@ -188,6 +188,15 @@
       <X :size="20" />
       <span>{{ errorMessage }}</span>
     </div>
+
+    <!-- Delete Confirmation Modal -->
+    <DeleteConfirmModal
+      :show="showDeleteModal"
+      :goal-name="friendToRemove?.username || ''"
+      type="friend"
+      @confirm="confirmRemoveFriend"
+      @cancel="cancelRemoveFriend"
+    />
   </div>
 </template>
 
@@ -205,6 +214,7 @@ import {
   UserMinus,
   Flame
 } from 'lucide-vue-next'
+import DeleteConfirmModal from '~/components/DeleteConfirmModal.vue'
 
 const router = useRouter()
 
@@ -222,6 +232,10 @@ const friends = ref([])
 
 const successMessage = ref('')
 const errorMessage = ref('')
+
+// Delete Modal State
+const showDeleteModal = ref(false)
+const friendToRemove = ref(null)
 
 let searchTimeout = null
 
@@ -332,15 +346,18 @@ const declineRequest = async (requestId) => {
   }
 }
 
-const removeFriend = async (userId, friendshipId) => {
-  if (!confirm('Möchtest du diese Freundschaft wirklich beenden?')) {
-    return
-  }
+const removeFriend = (userId, friendshipId, username) => {
+  friendToRemove.value = { userId, friendshipId, username }
+  showDeleteModal.value = true
+}
 
-  removingFriend.value = friendshipId
+const confirmRemoveFriend = async () => {
+  if (!friendToRemove.value) return
+
+  removingFriend.value = friendToRemove.value.friendshipId
   try {
     // API expects the friend's userId, not the friendshipId
-    await $fetch(`/api/friends/${userId}`, {
+    await $fetch(`/api/friends/${friendToRemove.value.userId}`, {
       method: 'DELETE'
     })
     
@@ -353,7 +370,14 @@ const removeFriend = async (userId, friendshipId) => {
     showError('Fehler beim Beenden der Freundschaft')
   } finally {
     removingFriend.value = null
+    showDeleteModal.value = false
+    friendToRemove.value = null
   }
+}
+
+const cancelRemoveFriend = () => {
+  showDeleteModal.value = false
+  friendToRemove.value = null
 }
 
 const loadRequests = async () => {
@@ -398,20 +422,36 @@ onMounted(async () => {
 <style scoped>
 .friends-page {
   min-height: 100vh;
-  background: linear-gradient(180deg, #315549 0%, #63b08e 100%);
+  background: white;
   padding-bottom: 80px;
 }
 
 /* Header */
 .header {
-  padding: max(env(safe-area-inset-top, 0px), 16px) 16px 16px 16px;
+  background: linear-gradient(135deg, #35C2C1 0%, #2BA39E 100%);
+  padding: max(env(safe-area-inset-top, 0px), 20px) 20px 20px 20px;
+  border-radius: 0 0 50px 50px;
+  position: relative;
+  overflow: hidden;
+}
+
+.header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: rgba(0, 0, 0, 0.1);
+  border-radius: 0 0 50px 50px;
 }
 
 .header-content {
   display: flex;
   align-items: center;
   gap: 16px;
+  position: relative;
+  z-index: 1;
 }
 
 .back-button {
@@ -422,36 +462,41 @@ onMounted(async () => {
   justify-content: center;
   cursor: pointer;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.15);
   transition: all 0.2s ease;
+}
+
+.back-button:hover {
+  background: rgba(255, 255, 255, 0.25);
 }
 
 .back-button:active {
   transform: scale(0.95);
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .header h1 {
   font-family: 'Lato', sans-serif;
   font-weight: 900;
-  font-size: 28px;
+  font-size: 32px;
   color: white;
   margin: 0;
+  line-height: 1.2;
 }
 
 /* Section */
 .section {
   background: white;
-  border-radius: 16px;
-  padding: 24px 16px;
-  margin: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 20px;
+  padding: 24px 20px;
+  margin: 20px 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 }
 
 .section-title {
   font-family: 'Lato', sans-serif;
   font-weight: 700;
-  font-size: 18px;
+  font-size: 20px;
   color: #1f2937;
   margin: 0 0 16px 0;
   display: flex;
@@ -460,14 +505,15 @@ onMounted(async () => {
 }
 
 .badge {
-  background: #35C2C1;
+  background: linear-gradient(135deg, #35C2C1 0%, #2BA39E 100%);
   color: white;
-  font-size: 14px;
-  font-weight: 600;
-  padding: 2px 8px;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 4px 10px;
   border-radius: 12px;
   min-width: 24px;
   text-align: center;
+  box-shadow: 0 2px 8px rgba(53, 194, 193, 0.3);
 }
 
 /* Search */
@@ -480,10 +526,17 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: #F3F4F6;
-  border-radius: 12px;
-  padding: 12px 16px;
-  min-height: 48px;
+  background: #F6F8FB;
+  border: 1px solid #E4E9F2;
+  border-radius: 16px;
+  padding: 14px 16px;
+  min-height: 56px;
+  transition: all 0.2s ease;
+}
+
+.search-input-wrapper:focus-within {
+  border-color: #35C2C1;
+  box-shadow: 0 0 0 3px rgba(53, 194, 193, 0.1);
 }
 
 .search-input {
@@ -492,12 +545,14 @@ onMounted(async () => {
   background: transparent;
   font-family: 'Urbanist', sans-serif;
   font-size: 16px;
+  font-weight: 500;
   color: #1f2937;
   outline: none;
 }
 
 .search-input::placeholder {
   color: #9CA3AF;
+  font-weight: 400;
 }
 
 .search-spinner {
@@ -518,11 +573,19 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px;
-  border-radius: 12px;
+  padding: 14px;
+  border-radius: 16px;
   background: #F9FAFB;
-  margin-bottom: 8px;
-  transition: background 0.2s ease;
+  border: 1px solid #E4E9F2;
+  margin-bottom: 10px;
+  transition: all 0.2s ease;
+}
+
+.user-card:hover {
+  background: #F3F4F6;
+  border-color: #D1D5DB;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
 }
 
 .friend-card {
@@ -539,7 +602,8 @@ onMounted(async () => {
 }
 
 .user-card:active {
-  background: #F3F4F6;
+  background: #E5E7EB;
+  transform: scale(0.98);
 }
 
 .user-avatar {
@@ -549,11 +613,14 @@ onMounted(async () => {
   overflow: hidden;
   flex-shrink: 0;
   background: #E5E7EB;
+  border: 2px solid white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .friend-card .user-avatar {
   width: 64px;
   height: 64px;
+  border: 3px solid white;
 }
 
 .user-avatar img {
@@ -651,7 +718,7 @@ onMounted(async () => {
 }
 
 .request-actions {
-  gap: 4px;
+  gap: 6px;
 }
 
 button {
@@ -661,9 +728,9 @@ button {
   gap: 6px;
   padding: 10px 16px;
   border: none;
-  border-radius: 8px;
-  font-family: 'Urbanist', sans-serif;
-  font-weight: 600;
+  border-radius: 12px;
+  font-family: 'Lato', sans-serif;
+  font-weight: 700;
   font-size: 14px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -672,52 +739,72 @@ button {
 }
 
 button:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
 .btn-primary {
-  background: #35C2C1;
+  background: linear-gradient(135deg, #35C2C1 0%, #2BA39E 100%);
   color: white;
+  box-shadow: 0 2px 8px rgba(53, 194, 193, 0.3);
+}
+
+.btn-primary:hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(53, 194, 193, 0.4);
+  transform: translateY(-1px);
 }
 
 .btn-primary:active:not(:disabled) {
-  transform: scale(0.95);
-  background: #2BA39E;
+  transform: scale(0.98);
+  box-shadow: 0 2px 6px rgba(53, 194, 193, 0.3);
 }
 
 .btn-secondary {
   background: #E5E7EB;
   color: #6B7280;
+  font-weight: 600;
 }
 
 .btn-success {
-  background: #10B981;
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
   color: white;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
 }
 
 .btn-accept {
-  background: #10B981;
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
   color: white;
   padding: 10px;
   min-width: 44px;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.btn-accept:hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+  transform: translateY(-1px);
 }
 
 .btn-accept:active:not(:disabled) {
-  transform: scale(0.95);
-  background: #059669;
+  transform: scale(0.98);
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
 }
 
 .btn-decline {
-  background: #EF4444;
+  background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
   color: white;
   padding: 10px;
   min-width: 44px;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.btn-decline:hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+  transform: translateY(-1px);
 }
 
 .btn-decline:active:not(:disabled) {
-  transform: scale(0.95);
-  background: #DC2626;
+  transform: scale(0.98);
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
 }
 
 .btn-remove {
@@ -725,11 +812,17 @@ button:disabled {
   color: #EF4444;
   padding: 10px;
   min-width: 44px;
+  border: 1px solid #FECACA;
+}
+
+.btn-remove:hover:not(:disabled) {
+  background: #FECACA;
+  transform: translateY(-1px);
 }
 
 .btn-remove:active:not(:disabled) {
-  transform: scale(0.95);
-  background: #FECACA;
+  transform: scale(0.98);
+  background: #FCA5A5;
 }
 
 .btn-spinner {
@@ -745,7 +838,7 @@ button:disabled {
 .no-results,
 .empty-state {
   text-align: center;
-  padding: 32px 16px;
+  padding: 48px 20px;
   color: #6B7280;
 }
 
@@ -755,48 +848,54 @@ button:disabled {
   align-items: center;
   justify-content: center;
   min-height: 300px;
-  margin: 16px;
+  margin: 20px 16px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 }
 
 .empty-state h3 {
   font-family: 'Lato', sans-serif;
   font-weight: 700;
-  font-size: 20px;
-  color: white;
+  font-size: 22px;
+  color: #1f2937;
   margin: 16px 0 8px 0;
 }
 
 .empty-state p {
   font-family: 'Urbanist', sans-serif;
-  font-size: 16px;
-  color: rgba(255, 255, 255, 0.8);
+  font-size: 15px;
+  font-weight: 500;
+  color: #6B7280;
   margin: 0;
+  line-height: 1.5;
 }
 
 /* Toast Messages */
 .toast {
   position: fixed;
-  bottom: 24px;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
-  border-radius: 12px;
+  gap: 10px;
+  padding: 14px 24px;
+  border-radius: 16px;
   font-family: 'Urbanist', sans-serif;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 15px;
   color: white;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
   z-index: 1000;
-  animation: slideUp 0.3s ease;
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
 }
 
 @keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateX(-50%) translateY(20px);
+    transform: translateX(-50%) translateY(30px);
   }
   to {
     opacity: 1;
@@ -805,18 +904,18 @@ button:disabled {
 }
 
 .toast-success {
-  background: #10B981;
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
 }
 
 .toast-error {
-  background: #EF4444;
+  background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
 }
 
 /* Mobile Optimization */
 @media (max-width: 480px) {
   .section {
-    margin: 12px;
-    padding: 20px 12px;
+    margin: 16px 12px;
+    padding: 20px 16px;
   }
 
   .user-actions button span {
@@ -826,6 +925,10 @@ button:disabled {
   .user-actions button {
     padding: 10px;
     min-width: 44px;
+  }
+
+  .header h1 {
+    font-size: 28px;
   }
 }
 

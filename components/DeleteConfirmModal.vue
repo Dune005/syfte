@@ -14,14 +14,14 @@
               </div>
             </div>
 
-            <h3 class="delete-modal-title">Sparziel löschen?</h3>
+            <h3 class="delete-modal-title">{{ title }}</h3>
             
             <p class="delete-modal-message">
-              Möchtest du das Sparziel <strong>{{ goalName }}</strong> wirklich löschen?
+              {{ message }} <strong>{{ goalName }}</strong>{{ messageEnd }}
             </p>
             
             <p class="delete-modal-warning">
-              Diese Aktion kann nicht rückgängig gemacht werden.
+              {{ warning }}
             </p>
 
             <div class="delete-modal-actions">
@@ -38,10 +38,10 @@
                 @click="handleConfirm"
                 :disabled="isDeleting"
               >
-                <span v-if="!isDeleting">Löschen</span>
+                <span v-if="!isDeleting">{{ confirmText }}</span>
                 <span v-else class="deleting-content">
                   <span class="spinner-small"></span>
-                  Wird gelöscht...
+                  {{ deletingText }}
                 </span>
               </button>
             </div>
@@ -53,7 +53,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { Trash2 } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -64,12 +64,46 @@ const props = defineProps({
   goalName: {
     type: String,
     default: ''
+  },
+  type: {
+    type: String,
+    default: 'goal', // 'goal' or 'friend'
+    validator: (value) => ['goal', 'friend'].includes(value)
   }
 })
 
 const emit = defineEmits(['confirm', 'cancel'])
 
 const isDeleting = ref(false)
+
+// Computed properties for dynamic text based on type
+const title = computed(() => {
+  return props.type === 'friend' ? 'Freundschaft beenden?' : 'Sparziel löschen?'
+})
+
+const message = computed(() => {
+  return props.type === 'friend' 
+    ? 'Möchtest du die Freundschaft mit' 
+    : 'Möchtest du das Sparziel'
+})
+
+const messageEnd = computed(() => {
+  return props.type === 'friend' ? ' wirklich beenden?' : ' wirklich löschen?'
+})
+
+const warning = computed(() => {
+  return props.type === 'friend'
+    ? 'Ihr könnt danach keine gemeinsamen Sparziele mehr sehen.'
+    : 'Diese Aktion kann nicht rückgängig gemacht werden.'
+})
+
+const confirmText = computed(() => {
+  return props.type === 'friend' ? 'Entfernen' : 'Löschen'
+})
+
+const deletingText = computed(() => {
+  return props.type === 'friend' ? 'Wird entfernt...' : 'Wird gelöscht...'
+})
 
 const handleOverlayClick = () => {
   if (!isDeleting.value) {
@@ -199,8 +233,8 @@ watch(() => props.show, (newVal) => {
 .delete-modal-cancel,
 .delete-modal-confirm {
   flex: 1;
-  height: 52px;
-  border-radius: 12px;
+  height: 56px;
+  border-radius: 16px;
   font-family: 'Lato', sans-serif;
   font-weight: 800; /* Lato ExtraBold */
   font-size: 16px;
@@ -208,6 +242,7 @@ watch(() => props.show, (newVal) => {
   transition: all 0.2s ease;
   border: none;
   letter-spacing: 0.025em;
+  padding: 0 20px;
 }
 
 .delete-modal-cancel {
@@ -299,7 +334,7 @@ watch(() => props.show, (newVal) => {
 /* Mobile Responsiveness */
 @media (max-width: 414px) {
   .delete-modal {
-    padding: 28px 20px 20px;
+    padding: 28px 20px 24px;
   }
 
   .delete-modal-title {
@@ -312,12 +347,15 @@ watch(() => props.show, (newVal) => {
 
   .delete-modal-actions {
     flex-direction: column;
+    gap: 12px;
   }
 
   .delete-modal-cancel,
   .delete-modal-confirm {
     width: 100%;
-    height: 48px; /* Touch-optimiert: mindestens 44px */
+    min-height: 56px;
+    height: 56px;
+    padding: 0 24px;
   }
 }
 </style>
