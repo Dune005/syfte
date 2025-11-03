@@ -1,8 +1,7 @@
 import { randomUUID } from 'crypto';
-import path from 'path';
 import { z } from 'zod';
 import { verifyJWT, getAuthCookie } from '../../utils/auth';
-import { Client } from 'basic-ftp';
+import { put } from '@vercel/blob';
 import { Readable } from 'stream';
 
 // Validation schema
@@ -17,19 +16,7 @@ const uploadImageSchema = z.object({
 const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
-// FTP configuration from environment variables
-const FTP_CONFIG = {
-  host: process.env.FTP_HOST || 'exigo-ws82.exigo.ch',
-  user: process.env.FTP_USER || 'syfte_ftp',
-  password: process.env.FTP_PASSWORD,
-  secure: false,
-  port: parseInt(process.env.FTP_PORT || '21')
-};
-
-// Base URL for public access to uploaded images
-const IMAGE_BASE_URL = process.env.IMAGE_BASE_URL || 'https://www.syfte.ch/images_sparziele';
-
-console.log(IMAGE_BASE_URL);
+// No need for FTP config anymore, using Vercel Blob
 
 export default defineEventHandler(async (event) => {
   // Only allow POST requests
@@ -112,55 +99,37 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    // Generate unique filename
-    const ext = path.extname(filename) || '.jpg';
-    const uniqueFilename = `${type}-${payload.userId}-${Date.now()}-${randomUUID()}${ext}`;
+    // Generate unique filename with proper extension
+    const ext = filename.split('.').pop() || 'jpg';
+    const uniqueFilename = `${type}-${payload.userId}-${Date.now()}-${randomUUID()}.${ext}`;
     
-    // Determine subdirectory based on type
-    const subdirectory = type === 'profile' ? 'profile' : 'goals';
+    // Determine path based on type
+    const filepath = `${type === 'profile' ? 'profile' : 'goals'}/${uniqueFilename}`;
 
-    // Upload to FTP server
-    const client = new Client();
     try {
-      // Validate FTP configuration
-      if (!FTP_CONFIG.password) {
-        throw createError({
-          statusCode: 500,
-          statusMessage: 'FTP-Serverkonfiguration unvollständig.'
-        });
-      }
-      
-      await client.access(FTP_CONFIG);
-      
-      // Ensure the subdirectory exists in web root
-      await client.ensureDir(`/htdocs/images_sparziele/${subdirectory}`);
-      
-      // Upload file to FTP server
-      const remotePath = `/htdocs/images_sparziele/${subdirectory}/${uniqueFilename}`;
-      const readableStream = Readable.from(fileBuffer);
-      await client.uploadFrom(readableStream, remotePath);
-      
-      // Generate public URL
-      const publicUrl = `${IMAGE_BASE_URL}/${subdirectory}/${uniqueFilename}`;
-      console.log(publicUrl);
+      // Upload to Vercel Blob
+      const blob = await put(filepath, fileBuffer, {
+        access: 'public',
+        contentType: mimeType || 'image/jpeg',
+        addRandomSuffix: false, // Use our own unique filename
+        token: process.env.SYFTE_BLOB_READ_WRITE_TOKEN // Verwende den custom Token-Namen
+      });
       
       return {
         success: true,
         message: 'Bild erfolgreich hochgeladen.',
-        imageUrl: publicUrl,
+        imageUrl: blob.url,
         filename: uniqueFilename,
         originalName: filename,
         size: fileBuffer.length,
         type: mimeType
       };
-    } catch (ftpError) {
-      console.error('FTP upload error:', ftpError);
+    } catch (uploadError) {
+      console.error('Blob upload error:', uploadError);
       throw createError({
         statusCode: 500,
-        statusMessage: 'Fehler beim Hochladen auf den FTP-Server.'
+        statusMessage: 'Fehler beim Hochladen der Datei.'
       });
-    } finally {
-      client.close();
     }
 
   } catch (error: any) {
