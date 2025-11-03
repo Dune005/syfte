@@ -1,70 +1,83 @@
 <template>
-  <div v-if="show" class="streak-popup-overlay" @click.self="closePopup">
-    <div class="streak-popup">
-      <!-- Flamme Icon -->
-      <img 
-        src="/images/streaks/flame.svg" 
-        alt="Streak Flame" 
-        class="streak-flame"
-      />
-      
-      <!-- Streak Zahl -->
-      <div class="streak-number">{{ streakCount }}</div>
-      
-      <!-- "day streak!" Text -->
-      <div class="streak-text">day streak!</div>
-      
-      <!-- Wochentags-Ansicht -->
-      <div class="week-container">
-        <div 
-          v-for="(day, index) in weekDays" 
-          :key="index" 
-          class="day-item"
-          :class="{ 'active': day.hasSaved }"
-        >
-          <!-- Grüner Haken für gespeicherte Tage -->
-          <svg 
-            v-if="day.hasSaved" 
-            class="check-icon" 
-            viewBox="0 0 18.67 18.67"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <circle cx="9.33" cy="9.33" r="8.67" fill="#64C661" stroke="#FFFFFF" stroke-width="0.67"/>
-            <path d="M5.5 9.5L8 12L13 7" stroke="#FFFFFF" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
+  <Transition name="popup-fade">
+    <div v-if="show" class="streak-popup-overlay" @click.self="closePopup">
+      <div class="streak-popup">
+        <div class="streak-content">
+          <!-- Flamme und Zahl kombiniert -->
+          <div class="flame-number-container">
+            <!-- Flamme Icon im Hintergrund -->
+            <div class="flame-container">
+              <img 
+                src="/images/streaks/flame.svg" 
+                alt="Streak Flame" 
+                class="streak-flame"
+              />
+            </div>
+            
+            <!-- Streak Zahl im Vordergrund -->
+            <div class="streak-number">{{ streakCount }}</div>
+          </div>
           
-          <!-- Tagesname -->
-          <div class="day-name">{{ day.name }}</div>
+          <!-- Label unterhalb -->
+          <div class="streak-label">Tage in Folge!</div>
+          
+          <!-- Wochentags-Ansicht -->
+          <div class="week-container">
+            <div 
+              v-for="(day, index) in weekDays" 
+              :key="index" 
+              class="day-item"
+              :class="{ 'active': day.hasSaved }"
+            >
+              <!-- Icon für gespeicherte/nicht gespeicherte Tage -->
+              <div class="day-indicator">
+                <CheckCircle2 
+                  v-if="day.hasSaved"
+                  :size="32"
+                  color="#64C661"
+                  fill="#64C661"
+                  class="check-icon"
+                />
+                <Circle 
+                  v-else
+                  :size="32"
+                  color="rgba(255, 255, 255, 0.4)"
+                  class="empty-icon"
+                />
+              </div>
+              
+              <!-- Tagesname -->
+              <div class="day-name">{{ day.name }}</div>
+            </div>
+          </div>
+          
+          <!-- Beschreibungstext -->
+          <p class="streak-description">
+            Eine Serie zählt, wie viele Tage du hintereinander gespart hast.
+          </p>
+          
+          <!-- Happy Schaf -->
+          <div class="sheep-container">
+            <img 
+              src="/images/syfte_Schaf/syfte_Schaf_happy.png" 
+              alt="Happy Schaf" 
+              class="happy-sheep"
+            />
+          </div>
+          
+          <!-- Button "Weiter Sparen" -->
+          <button @click="closePopup" class="continue-button">
+            Weiter Sparen 🎉
+          </button>
         </div>
       </div>
-      
-      <!-- Zwei Ellipsen (dekorative Kreise) -->
-      <div class="ellipse ellipse-1"></div>
-      <div class="ellipse ellipse-2"></div>
-      
-      <!-- Beschreibungstext -->
-      <p class="streak-description">
-        Eine Serie zählt, wie viele Tage du hintereinander<br>
-        gespart hast.
-      </p>
-      
-      <!-- Happy Schaf -->
-      <img 
-        src="/images/syfte_Schaf/syfte_Schaf_happy.png" 
-        alt="Happy Schaf" 
-        class="happy-sheep"
-      />
-      
-      <!-- Button "Alles klar!" -->
-      <button @click="closePopup" class="close-button">
-        Alles klar!
-      </button>
     </div>
-  </div>
+  </Transition>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { Circle, CheckCircle2 } from 'lucide-vue-next';
 
 interface Props {
   show: boolean;
@@ -99,6 +112,32 @@ const closePopup = () => {
 </script>
 
 <style scoped>
+/* Popup Transitions */
+.popup-fade-enter-active,
+.popup-fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.popup-fade-enter-active .streak-popup,
+.popup-fade-leave-active .streak-popup {
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+}
+
+.popup-fade-enter-from,
+.popup-fade-leave-to {
+  opacity: 0;
+}
+
+.popup-fade-enter-from .streak-popup {
+  transform: scale(0.85) translateY(30px);
+  opacity: 0;
+}
+
+.popup-fade-leave-to .streak-popup {
+  transform: scale(0.9) translateY(-15px);
+  opacity: 0;
+}
+
 /* Overlay */
 .streak-popup-overlay {
   position: fixed;
@@ -106,82 +145,161 @@ const closePopup = () => {
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(180deg, #315549 0%, #63b08e 100%);
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
-  animation: fadeIn 0.3s ease-in-out;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  z-index: 2000;
+  padding: 20px;
 }
 
 /* Popup Container */
 .streak-popup {
   position: relative;
-  width: 393px;
-  max-width: 100%;
-  padding: 40px 24px;
+  background: linear-gradient(180deg, #315549 0%, #63b08e 100%);
+  border-radius: 32px;
+  max-width: 420px;
+  width: 100%;
+  padding: 0;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5), 
+              0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+  overflow: hidden;
+}
+
+.streak-popup::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 150px;
+  background: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.streak-content {
+  position: relative;
+  padding: 40px 28px 36px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  color: white;
-}
-
-/* Flamme Icon */
-.streak-flame {
-  width: 162px;
-  height: 309px;
-  margin-bottom: -40px; /* Overlap mit der Zahl */
+  gap: 24px;
   z-index: 1;
 }
 
-/* Streak Zahl */
-.streak-number {
-  font-family: 'Lato', sans-serif;
-  font-weight: 900;
-  font-size: 150px;
-  line-height: 1.2em;
-  text-align: center;
-  color: white;
-  -webkit-text-stroke: 7px #35C2C1;
-  margin-top: 30px;
-  margin-bottom: 20px;
-  z-index: 2;
+/* Flamme Icon - im Hintergrund */
+.flame-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 140px;
+  height: 265px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 8px 20px rgba(255, 123, 0, 0.35));
+  z-index: 1;
 }
 
-/* "day streak!" Text */
-.streak-text {
-  font-family: 'Lato', sans-serif;
+.streak-flame {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  animation: flameFlicker 2.5s ease-in-out infinite;
+  opacity: 0.95;
+}
+
+@keyframes flameFlicker {
+  0%, 100% {
+    transform: scale(1) translateY(0);
+    filter: brightness(1);
+  }
+  50% {
+    transform: scale(1.05) translateY(-4px);
+    filter: brightness(1.1);
+  }
+}
+
+/* Flamme und Zahl Container */
+.flame-number-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 240px;
+  margin-top: -20px;
+}
+
+.streak-number {
+  position: relative;
+  z-index: 10;
+  margin-top: 70px;
+  font-family: 'Urbanist', sans-serif;
   font-weight: 900;
-  font-size: 32px;
-  line-height: 1.2em;
+  font-size: 120px;
+  line-height: 1;
   text-align: center;
+  letter-spacing: -3px;
+  
+  /* Weiße Füllung mit türkiser Kontur */
   color: white;
-  margin-bottom: 40px;
+  -webkit-text-stroke: 5px #35C2C1;
+  
+  /* Subtiler Glow */
+  filter: drop-shadow(0 0 20px rgba(53, 194, 193, 0.5))
+          drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+  
+  /* Animation */
+  animation: numberPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes numberPop {
+  0% {
+    transform: scale(0) rotate(-3deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.08) rotate(1deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+/* Accessibility: Reduzierte Animationen */
+@media (prefers-reduced-motion: reduce) {
+  .streak-number {
+    animation: numberPop 0.4s ease-out;
+  }
+}
+
+.streak-label {
+  font-family: 'Urbanist', sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  letter-spacing: 0.5px;
+  margin-top: -8px;
 }
 
 /* Wochentags-Container */
 .week-container {
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  gap: 18px;
-  padding: 21px 10px;
-  width: 363px;
-  max-width: 100%;
-  min-height: 164px;
-  border: 2px solid rgba(255, 255, 255, 0.56);
-  border-radius: 16px;
-  margin-bottom: 20px;
-  position: relative;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+  width: 100%;
+  padding: 20px 16px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) inset,
+              0 0 0 1px rgba(255, 255, 255, 0.2) inset;
 }
 
 /* Einzelner Tag */
@@ -190,46 +308,58 @@ const closePopup = () => {
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  transition: transform 0.2s ease;
 }
 
-/* Grüner Haken Icon */
+.day-item.active {
+  animation: dayPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes dayPop {
+  0% {
+    transform: scale(0);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Day Indicator */
+.day-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+
 .check-icon {
-  width: 34px;
-  height: 34px;
+  filter: drop-shadow(0 2px 6px rgba(100, 198, 97, 0.4));
+  transition: transform 0.2s ease;
+}
+
+.empty-icon {
+  transition: all 0.2s ease;
+}
+
+.day-item:hover .empty-icon {
+  color: rgba(255, 255, 255, 0.6);
+  transform: scale(1.05);
 }
 
 /* Tagesname */
 .day-name {
-  font-family: 'Lato', sans-serif;
-  font-weight: 900;
-  font-size: 24px;
-  line-height: 1.2em;
+  font-family: 'Urbanist', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
   text-align: center;
-  color: rgba(255, 255, 255, 0.48);
+  color: rgba(255, 255, 255, 0.5);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  transition: color 0.2s ease;
 }
 
-/* Aktiver Tag (mit gespartem Geld) */
 .day-item.active .day-name {
-  color: white;
-}
-
-/* Dekorative Ellipsen */
-.ellipse {
-  position: absolute;
-  width: 34px;
-  height: 34px;
-  background: rgba(255, 255, 255, 0.5);
-  border-radius: 50%;
-}
-
-.ellipse-1 {
-  left: 274px;
-  top: 601px;
-}
-
-.ellipse-2 {
-  left: 319px;
-  top: 601px;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 /* Beschreibungstext */
@@ -237,96 +367,182 @@ const closePopup = () => {
   font-family: 'Lato', sans-serif;
   font-weight: 400;
   font-size: 15px;
-  line-height: 1.2em;
+  line-height: 1.5;
   text-align: center;
-  color: white;
-  margin: 20px 0;
-  max-width: 363px;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 8px 0;
+  max-width: 340px;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
-/* Happy Schaf */
+/* Happy Schaf Container */
+.sheep-container {
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: sheepBounce 0.6s ease-in-out;
+  filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.25));
+}
+
+@keyframes sheepBounce {
+  0% {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(-8px);
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
 .happy-sheep {
-  width: 234px;
-  height: 234px;
-  position: absolute;
-  right: 0;
-  bottom: 120px;
-  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
-/* Button "Alles klar!" */
-.close-button {
-  width: 331px;
-  max-width: 100%;
+/* Button */
+.continue-button {
+  width: 100%;
+  max-width: 340px;
   height: 56px;
   background: #1E232C;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   font-family: 'Urbanist', sans-serif;
-  font-weight: 600;
-  font-size: 15px;
+  font-weight: 700;
+  font-size: 16px;
   color: white;
   cursor: pointer;
-  transition: opacity 0.2s;
-  margin-top: 60px;
-  z-index: 3;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  margin-top: 8px;
 }
 
-.close-button:hover {
-  opacity: 0.9;
+.continue-button:hover {
+  background: #2A3140;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
 }
 
-.close-button:active {
-  opacity: 0.8;
+.continue-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 /* Responsive Design */
 @media (max-width: 414px) {
   .streak-popup {
-    width: 100%;
-    padding: 20px 16px;
+    max-width: 95%;
+    border-radius: 28px;
   }
   
-  .streak-flame {
-    width: 140px;
-    height: 260px;
+  .streak-content {
+    padding: 32px 20px 28px;
+    gap: 20px;
+  }
+  
+  .flame-number-container {
+    height: 200px;
+    margin-top: -15px;
+  }
+  
+  .flame-container {
+    width: 120px;
+    height: 228px;
   }
   
   .streak-number {
-    font-size: 120px;
+    margin-top: 60px;
+    font-size: 100px;
+    letter-spacing: -2.5px;
+    -webkit-text-stroke: 4px #35C2C1;
+    filter: drop-shadow(0 0 16px rgba(53, 194, 193, 0.45))
+            drop-shadow(0 3px 6px rgba(0, 0, 0, 0.2));
   }
   
-  .streak-text {
-    font-size: 28px;
+  .streak-label {
+    font-size: 18px;
+    margin-top: -6px;
   }
   
   .week-container {
-    width: 100%;
-    gap: 12px;
-    padding: 16px 8px;
+    gap: 8px;
+    padding: 16px 12px;
+  }
+  
+  .day-indicator {
+    width: 28px;
+    height: 28px;
   }
   
   .day-name {
-    font-size: 20px;
+    font-size: 12px;
   }
   
-  .happy-sheep {
-    width: 180px;
+  .streak-description {
+    font-size: 14px;
+    max-width: 100%;
+  }
+  
+  .sheep-container {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .continue-button {
+    max-width: 100%;
+    font-size: 15px;
+  }
+}
+
+/* Extra Small Screens */
+@media (max-width: 360px) {
+  .flame-number-container {
     height: 180px;
-    bottom: 100px;
+    margin-top: -10px;
   }
   
-  .close-button {
-    width: 100%;
+  .flame-container {
+    width: 100px;
+    height: 190px;
+  }
+  
+  .streak-number {
+    margin-top: 50px;
+    font-size: 85px;
+    letter-spacing: -2px;
+    -webkit-text-stroke: 3.5px #35C2C1;
+    filter: drop-shadow(0 0 14px rgba(53, 194, 193, 0.4))
+            drop-shadow(0 2px 5px rgba(0, 0, 0, 0.2));
+  }
+  
+  .week-container {
+    gap: 6px;
+    padding: 14px 10px;
+  }
+  
+  .day-indicator {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .day-name {
+    font-size: 11px;
   }
 }
 
 /* Safe Area Support für iOS */
 @supports (padding: max(0px)) {
-  .streak-popup {
-    padding-left: max(24px, env(safe-area-inset-left));
-    padding-right: max(24px, env(safe-area-inset-right));
-    padding-bottom: max(40px, env(safe-area-inset-bottom));
+  .streak-content {
+    padding-left: max(28px, env(safe-area-inset-left));
+    padding-right: max(28px, env(safe-area-inset-right));
+    padding-bottom: max(36px, env(safe-area-inset-bottom));
   }
 }
 </style>
