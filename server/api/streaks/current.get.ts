@@ -26,20 +26,17 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    // Get current streaks for the user
-    const userStreaks = await db
+    // Get current streak for the user (nur noch 1 Eintrag pro User)
+    const [userStreak] = await db
       .select()
       .from(streaks)
-      .where(eq(streaks.userId, payload.userId));
+      .where(eq(streaks.userId, payload.userId))
+      .limit(1);
 
-    // Calculate overall streak (across all goals)
-    const totalCurrentStreak = userStreaks.reduce((sum, streak) => {
-      return sum + (streak.currentCount || 0);
-    }, 0);
-
-    const totalLongestStreak = userStreaks.reduce((max, streak) => {
-      return Math.max(max, streak.longestCount || 0);
-    }, 0);
+    // Werte aus dem einen Streak-Eintrag (oder 0 falls keiner existiert)
+    const totalCurrentStreak = userStreak?.currentCount || 0;
+    const totalLongestStreak = userStreak?.longestCount || 0;
+    const currentGoalId = userStreak?.goalId || null;
 
     // Letzten 7 Tage berechnen für Wochendarstellung
     const today = new Date();
@@ -92,12 +89,8 @@ export default defineEventHandler(async (event) => {
         current: totalCurrentStreak,
         longest: totalLongestStreak,
         weekData, // Boolean-Array: [Mo, Di, Mi, Do, Fr, Sa, So]
-        byGoal: userStreaks.map(streak => ({
-          goalId: streak.goalId,
-          current: streak.currentCount,
-          longest: streak.longestCount,
-          lastSaveDate: streak.lastSaveDate
-        }))
+        currentGoalId, // ID des Ziels, für das heute gespart wurde
+        lastSaveDate: userStreak?.lastSaveDate || null
       }
     };
 

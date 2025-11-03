@@ -71,14 +71,14 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    // Get overall streak (where goal_id is null)
+    // Get overall streak (nur noch 1 Eintrag pro User)
     const [overallStreak] = await db
       .select({
         currentCount: streaks.currentCount,
         longestCount: streaks.longestCount
       })
       .from(streaks)
-      .where(and(eq(streaks.userId, payload.userId), isNull(streaks.goalId)))
+      .where(eq(streaks.userId, payload.userId))
       .limit(1);
 
     // Get user achievements with achievement details

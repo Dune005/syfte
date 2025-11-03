@@ -108,14 +108,14 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    // Get global streak (same as dashboard)
+    // Get global streak (nur noch 1 Eintrag pro User)
     const [globalStreak] = await db
       .select({
         currentCount: streaks.currentCount,
         longestCount: streaks.longestCount
       })
       .from(streaks)
-      .where(and(eq(streaks.userId, payload.userId), isNull(streaks.goalId)))
+      .where(eq(streaks.userId, payload.userId))
       .limit(1);
 
     // Get assigned actions for this goal

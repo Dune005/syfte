@@ -45,7 +45,7 @@ export default defineEventHandler(async (event) => {
       };
     }
 
-    // Aktuellen globalen Streak abrufen
+    // Aktuellen Streak abrufen (nur noch 1 Eintrag pro User)
     const [streakRecord] = await db
       .select({
         currentCount: streaks.currentCount,
@@ -53,12 +53,7 @@ export default defineEventHandler(async (event) => {
         lastSaveDate: streaks.lastSaveDate
       })
       .from(streaks)
-      .where(
-        and(
-          eq(streaks.userId, payload.userId),
-          sql`${streaks.goalId} IS NULL` // Nur globaler Streak
-        )
-      )
+      .where(eq(streaks.userId, payload.userId))
       .limit(1);
 
     // Wenn kein Streak-Record existiert, kein Popup

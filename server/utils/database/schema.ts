@@ -132,9 +132,9 @@ export const streaks = mysqlTable('streaks', {
   longestCount: tinyint('longest_count').notNull().default(0),
   lastSaveDate: datetime('last_save_date')
 }, (table) => ({
-  // UNIQUE constraint: Nur 1 Streak-Eintrag pro User/Goal-Kombination
+  // UNIQUE constraint: Nur 1 Streak-Eintrag pro User (nicht mehr pro Goal)
   // Wichtig: Dieser Index verhindert Duplikate in der DB
-  userGoalUnique: uniqueIndex('uq_streak_user_goal').on(table.userId, table.goalId)
+  userUnique: uniqueIndex('uq_streak_user').on(table.userId)
 }));
 
 // Friendships

@@ -109,14 +109,14 @@ export default defineEventHandler(async (event) => {
       return sum + parseFloat(goal.savedChf.toString());
     }, 0);
 
-    // 4. Get current streak
+    // 4. Get current streak (nur noch 1 Eintrag pro User)
     const [currentStreak] = await db
       .select({
         currentCount: streaks.currentCount,
         longestCount: streaks.longestCount
       })
       .from(streaks)
-      .where(and(eq(streaks.userId, payload.userId), isNull(streaks.goalId)))
+      .where(eq(streaks.userId, payload.userId))
       .limit(1);
 
     // 5. Get available actions for quick add
