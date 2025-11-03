@@ -4,6 +4,7 @@ import { db } from '../../utils/database/connection';
 import { users, goals, savings, streaks } from '../../utils/database/schema';
 import { verifyJWT, getAuthCookie } from '../../utils/auth';
 import { checkAndAwardAchievements } from '../../utils/achievements';
+import { updateUserStreak } from '../../utils/streaks';
 
 // Validation schema
 const quickAddSchema = z.object({
@@ -126,15 +127,8 @@ export default defineEventHandler(async (event) => {
       })
       .where(eq(users.id, payload.userId));
 
-    // Update streak (simplified - just increment current count)
-    // TODO: Implement proper streak logic based on consecutive days
-    await db
-      .update(streaks)
-      .set({
-        currentCount: sql`current_count + 1`,
-        lastSaveDate: new Date()
-      })
-      .where(eq(streaks.userId, payload.userId));
+    // Update user's streak for the favorite goal
+    const streakUpdate = await updateUserStreak(payload.userId, user.favoriteGoalId);
 
     // Get updated goal info
     const [updatedGoal] = await db
@@ -171,6 +165,11 @@ export default defineEventHandler(async (event) => {
         targetChf: updatedGoal!.targetChf,
         progressPercentage: Math.round(progressPercentage * 100) / 100,
         isCompleted: savedAmount >= targetAmount
+      },
+      streak: {
+        current: streakUpdate.currentStreak,
+        longest: streakUpdate.longestStreak,
+        isNewRecord: streakUpdate.isNewRecord
       },
       achievements: {
         newlyUnlocked: newAchievements,

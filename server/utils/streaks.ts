@@ -17,6 +17,7 @@ const isSameDay = (date1: Date | null, date2: Date): boolean => {
  * - Schreibt NUR 1x pro Tag in die DB (nicht bei jedem Sparvorgang)
  * - Löscht alle Streak-Einträge bei Unterbrechung (wenn ein Tag ausgelassen wurde)
  * - Effiziente Prüfung ob heute bereits gespart wurde
+ * - Verwendet MySQL UPSERT um Duplikate zu verhindern
  */
 export async function updateUserStreak(userId: number, goalId?: number): Promise<{
   currentStreak: number;
@@ -71,15 +72,15 @@ export async function updateUserStreak(userId: number, goalId?: number): Promise
 
     // Kein Eintrag vorhanden oder Serie wurde unterbrochen → Neuer Start
     if (!streakRecord) {
-      await db
-        .insert(streaks)
-        .values({
-          userId,
-          goalId: goalId || null,
-          currentCount: 1,
-          longestCount: 1,
-          lastSaveDate: todayDate
-        });
+      // Verwende INSERT mit ON DUPLICATE KEY UPDATE um Race Conditions zu vermeiden
+      await db.execute(sql`
+        INSERT INTO streaks (user_id, goal_id, current_count, longest_count, last_save_date)
+        VALUES (${userId}, ${goalId || null}, 1, 1, ${todayDate})
+        ON DUPLICATE KEY UPDATE
+          current_count = 1,
+          longest_count = GREATEST(longest_count, 1),
+          last_save_date = ${todayDate}
+      `);
 
       return {
         currentStreak: 1,
@@ -93,15 +94,15 @@ export async function updateUserStreak(userId: number, goalId?: number): Promise
     const newLongestCount = Math.max(streakRecord.longestCount, newCurrentCount);
     const isNewRecord = newCurrentCount > streakRecord.longestCount;
 
-    // Update streak record mit neuem Tag
-    await db
-      .update(streaks)
-      .set({
-        currentCount: newCurrentCount,
-        longestCount: newLongestCount,
-        lastSaveDate: todayDate
-      })
-      .where(eq(streaks.id, streakRecord.id));
+    // Update streak record mit neuem Tag (UPSERT für Sicherheit)
+    await db.execute(sql`
+      INSERT INTO streaks (user_id, goal_id, current_count, longest_count, last_save_date)
+      VALUES (${userId}, ${goalId || null}, ${newCurrentCount}, ${newLongestCount}, ${todayDate})
+      ON DUPLICATE KEY UPDATE
+        current_count = ${newCurrentCount},
+        longest_count = ${newLongestCount},
+        last_save_date = ${todayDate}
+    `);
 
     return {
       currentStreak: newCurrentCount,

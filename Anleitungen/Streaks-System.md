@@ -61,7 +61,13 @@ Tag 5 (Freitag):
    - Rationale: Alte Daten sind irrelevant, User startet komplett neu
    - Spart Speicherplatz und hält Tabelle schlank
 
-3. **Effiziente Logik-Flow:**
+3. **UNIQUE Constraint & UPSERT**
+   - **DB-Ebene**: UNIQUE Index auf `(user_id, goal_id)` verhindert Duplikate
+   - **Code-Ebene**: MySQL UPSERT (`INSERT ... ON DUPLICATE KEY UPDATE`)
+   - Schützt vor Race Conditions bei parallelen Requests
+   - Garantiert: **Maximal 1 Streak-Eintrag pro User/Goal**
+
+4. **Effiziente Logik-Flow:**
    ```typescript
    // 1. Hole Streak-Record
    const streakRecord = await db.select().from(streaks)...
@@ -77,9 +83,15 @@ Tag 5 (Freitag):
      // Neuer Eintrag wird gleich erstellt
    }
    
-   // 4. Streak fortsetzen oder neu starten
-   if (gestern gespart) { currentCount++ }
-   else { INSERT neuer Eintrag mit count=1 }
+   // 4. Streak fortsetzen oder neu starten (mit UPSERT)
+   await db.execute(sql`
+     INSERT INTO streaks (user_id, goal_id, current_count, longest_count, last_save_date)
+     VALUES (?, ?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE
+       current_count = ?,
+       longest_count = ?,
+       last_save_date = ?
+   `)
    ```
 
 **Performance-Vorteile:**
@@ -87,6 +99,14 @@ Tag 5 (Freitag):
 - ✅ Kleinere `streaks`-Tabelle (Auto-Cleanup bei Unterbrechung)
 - ✅ Schnellere Abfragen (weniger Einträge)
 - ✅ Keine redundanten Daten
+- ✅ **Keine Duplikate möglich** (DB + Code Schutz)
+
+**Migration erforderlich:**
+Wenn du bereits Duplikate in der DB hast, führe die Migration aus:
+```bash
+mysql -u USER -p DATABASE < db/migrations/002_fix_streaks_duplicates.sql
+```
+Details: `Anleitungen/Streaks-Duplikate-Fix.md`
 
 ### API-Endpunkte
 

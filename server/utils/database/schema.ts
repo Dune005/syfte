@@ -1,4 +1,4 @@
-import { mysqlTable, bigint, varchar, datetime, decimal, text, json, tinyint, mysqlEnum } from 'drizzle-orm/mysql-core';
+import { mysqlTable, bigint, varchar, datetime, decimal, text, json, tinyint, mysqlEnum, uniqueIndex } from 'drizzle-orm/mysql-core';
 
 // Users table
 export const users = mysqlTable('users', {
@@ -131,7 +131,11 @@ export const streaks = mysqlTable('streaks', {
   currentCount: tinyint('current_count').notNull().default(0),
   longestCount: tinyint('longest_count').notNull().default(0),
   lastSaveDate: datetime('last_save_date')
-});
+}, (table) => ({
+  // UNIQUE constraint: Nur 1 Streak-Eintrag pro User/Goal-Kombination
+  // Wichtig: Dieser Index verhindert Duplikate in der DB
+  userGoalUnique: uniqueIndex('uq_streak_user_goal').on(table.userId, table.goalId)
+}));
 
 // Friendships
 export const friendships = mysqlTable('friendships', {

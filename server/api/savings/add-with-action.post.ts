@@ -163,8 +163,8 @@ export default defineEventHandler(async (event) => {
     const updatedSavedAmount = parseFloat(updatedGoal!.savedChf.toString());
     const progressPercentage = updatedTargetAmount > 0 ? Math.min((updatedSavedAmount / updatedTargetAmount) * 100, 100) : 0;
 
-    // Update user's global streak (not goal-specific)
-    const streakUpdate = await updateUserStreak(payload.userId);
+    // Update user's streak for this specific goal
+    const streakUpdate = await updateUserStreak(payload.userId, goalId);
 
     // Check for newly unlocked achievements
     const newAchievements = await checkAndAwardAchievements(payload.userId);
