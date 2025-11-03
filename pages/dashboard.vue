@@ -352,6 +352,14 @@
       :week-data="currentStreakData.weekData"
       @close="closeStreakPopup"
     />
+
+    <!-- Delete Confirmation Modal -->
+    <DeleteConfirmModal
+      :show="showDeleteModal"
+      :goal-name="goalToDelete?.name || ''"
+      @confirm="confirmDeleteGoal"
+      @cancel="cancelDeleteGoal"
+    />
     </template>
   </div>
 </template>
@@ -360,6 +368,7 @@
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Plus, CirclePlus, Check, CircleFadingPlus, Star, Trash2, Users } from 'lucide-vue-next'
+import DeleteConfirmModal from '~/components/DeleteConfirmModal.vue'
 
 const router = useRouter()
 
@@ -408,6 +417,10 @@ const currentStreakData = ref({
   count: 0,
   weekData: [false, false, false, false, false, false, false]
 })
+
+// Delete Modal State
+const showDeleteModal = ref(false)
+const goalToDelete = ref(null)
 
 // Navigation
 const navigateToFriends = () => {
@@ -864,26 +877,39 @@ const toggleFavorite = async (goal) => {
   }
 }
 
-const deleteGoal = async (goal) => {
-  if (!confirm(`Möchtest du das Sparziel "${goal.name}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`)) {
-    return
-  }
+const deleteGoal = (goal) => {
+  goalToDelete.value = goal
+  showDeleteModal.value = true
+}
+
+const confirmDeleteGoal = async () => {
+  if (!goalToDelete.value) return
   
   try {
-    const response = await $fetch(`/api/goals/${goal.id}`, {
+    const response = await $fetch(`/api/goals/${goalToDelete.value.id}`, {
       method: 'DELETE'
     })
     
     if (response.success) {
       // Remove from local list
-      goals.value = goals.value.filter(g => g.id !== goal.id)
+      goals.value = goals.value.filter(g => g.id !== goalToDelete.value.id)
+      // Close modal
+      showDeleteModal.value = false
+      goalToDelete.value = null
       // Reload goals to update total stats
       await fetchGoals()
     }
   } catch (error) {
     console.error('Fehler beim Löschen des Sparziels:', error)
     alert('Fehler beim Löschen des Sparziels. Bitte versuche es erneut.')
+    showDeleteModal.value = false
+    goalToDelete.value = null
   }
+}
+
+const cancelDeleteGoal = () => {
+  showDeleteModal.value = false
+  goalToDelete.value = null
 }
 
 const logout = async () => {
