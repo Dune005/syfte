@@ -16,6 +16,13 @@
       <!-- Goal Header -->
       <div class="goal-header">
         <h1 class="goal-title">{{ goal.title }}</h1>
+        
+        <!-- Completed Badge -->
+        <div v-if="goal.isCompleted" class="completed-badge-large">
+          <Check :size="20" color="white" />
+          <span>Ziel erreicht!</span>
+        </div>
+        
         <div class="goal-image-container">
           <img :src="goal.imageUrl || '/images/syfte_Schaf/syfte_Schaf.png'" :alt="goal.title" class="goal-image" />
         </div>
@@ -50,13 +57,39 @@
       <div class="actions-section">
         <div class="actions-header">
           <h2>Sparaktionen</h2>
-          <button class="add-action-btn" @click="showCreateActionModal = true">
+          <button 
+            v-if="!goal.isCompleted"
+            class="add-action-btn" 
+            @click="showCreateActionModal = true"
+          >
             <Plus :size="20" color="#35C2C1" />
             <span>Neue Aktion</span>
           </button>
         </div>
 
-        <div v-if="assignedActions.length > 0" class="actions-list">
+        <!-- Completed Message -->
+        <div v-if="goal.isCompleted" class="goal-completed-message">
+          <div class="success-icon">
+            <Check :size="48" color="#10B981" />
+          </div>
+          <h3>🎉 Glückwunsch!</h3>
+          <p>Du hast dein Sparziel erreicht!</p>
+          <p class="completion-details">
+            Du hast <strong>{{ formatCurrency(goal.savedChf) }}</strong> von 
+            <strong>{{ formatCurrency(goal.targetChf) }}</strong> gespart.
+          </p>
+          
+          <button 
+            class="delete-goal-btn" 
+            @click="deleteGoal"
+            :disabled="isDeleting"
+          >
+            <Trash2 :size="18" />
+            <span>{{ isDeleting ? 'Wird gelöscht...' : 'Ziel löschen' }}</span>
+          </button>
+        </div>
+
+        <div v-else-if="assignedActions.length > 0" class="actions-list">
           <div
             v-for="action in assignedActions"
             :key="action.id"
@@ -157,7 +190,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ChevronLeft, Plus, Check, CircleFadingPlus } from 'lucide-vue-next'
+import { ChevronLeft, Plus, Check, CircleFadingPlus, Trash2 } from 'lucide-vue-next'
 
 const router = useRouter()
 const route = useRoute()
@@ -171,6 +204,7 @@ const isCreatingAction = ref(false)
 const actionError = ref('')
 const executingAction = ref(null)
 const successActions = ref([])
+const isDeleting = ref(false)
 
 const newAction = ref({
   title: '',
@@ -207,6 +241,12 @@ const fetchGoalDetails = async () => {
 const executeAction = async (action) => {
   if (executingAction.value === action.id) return
   
+  // Check if goal is already completed
+  if (goal.value?.isCompleted) {
+    alert('Dieses Sparziel ist bereits erreicht!')
+    return
+  }
+  
   executingAction.value = action.id
   
   try {
@@ -235,6 +275,32 @@ const executeAction = async (action) => {
     console.error('Fehler beim Ausführen der Sparaktion:', error)
   } finally {
     executingAction.value = null
+  }
+}
+
+const deleteGoal = async () => {
+  if (isDeleting.value) return
+  
+  if (!confirm('Möchtest du dieses Sparziel wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.')) {
+    return
+  }
+  
+  isDeleting.value = true
+  
+  try {
+    const response = await $fetch(`/api/goals/${goal.value.id}`, {
+      method: 'DELETE'
+    })
+    
+    if (response.success) {
+      // Redirect to dashboard after successful deletion
+      router.push('/dashboard')
+    }
+  } catch (error) {
+    console.error('Fehler beim Löschen des Sparziels:', error)
+    alert('Fehler beim Löschen des Sparziels. Bitte versuche es erneut.')
+  } finally {
+    isDeleting.value = false
   }
 }
 
@@ -674,6 +740,94 @@ onMounted(() => {
 .no-actions p:first-child {
   font-weight: 600;
   color: #1E232C;
+}
+
+/* Goal Completed Message */
+.goal-completed-message {
+  text-align: center;
+  padding: 60px 40px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.1) 100%);
+  border-radius: 16px;
+  border: 2px solid #10B981;
+  margin-bottom: 24px;
+}
+
+.success-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+  animation: successPop 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes successPop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.goal-completed-message h3 {
+  font-size: 28px;
+  font-weight: 800;
+  color: #1E232C;
+  margin: 0 0 12px 0;
+}
+
+.goal-completed-message p {
+  font-size: 18px;
+  color: #666;
+  margin: 0 0 8px 0;
+  line-height: 1.6;
+}
+
+.completion-details {
+  font-size: 16px;
+  color: #1E232C;
+  margin-top: 16px;
+}
+
+.completion-details strong {
+  color: #10B981;
+  font-weight: 700;
+}
+
+.delete-goal-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #EF4444;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 24px;
+  transition: all 0.2s ease;
+}
+
+.delete-goal-btn:hover:not(:disabled) {
+  background: #DC2626;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.delete-goal-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* Error State */

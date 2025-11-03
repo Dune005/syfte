@@ -4,6 +4,7 @@ import { db } from '../../utils/database/connection';
 import { users, goals, savings, actions } from '../../utils/database/schema';
 import { verifyJWT, getAuthCookie } from '../../utils/auth';
 import { checkAndAwardAchievements } from '../../utils/achievements';
+import { updateUserStreak } from '../../utils/streaks';
 
 // Validation schema
 const addSavingWithActionSchema = z.object({
@@ -99,6 +100,17 @@ export default defineEventHandler(async (event) => {
       });
     }
 
+    // Check if goal is already completed
+    const currentSaved = parseFloat(goal.savedChf.toString());
+    const targetAmount = parseFloat(goal.targetChf.toString());
+    
+    if (currentSaved >= targetAmount) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Dieses Sparziel ist bereits erreicht! Du kannst nicht weiter darauf einsparen.'
+      });
+    }
+
     // Use provided amount or default from action
     const savingAmount = amount || parseFloat(action.defaultChf.toString());
     const savingNote = note || `${action.title} - CHF ${savingAmount}`;
@@ -147,9 +159,12 @@ export default defineEventHandler(async (event) => {
       .where(eq(goals.id, goalId))
       .limit(1);
 
-    const targetAmount = parseFloat(updatedGoal!.targetChf.toString());
-    const savedAmount = parseFloat(updatedGoal!.savedChf.toString());
-    const progressPercentage = targetAmount > 0 ? Math.min((savedAmount / targetAmount) * 100, 100) : 0;
+    const updatedTargetAmount = parseFloat(updatedGoal!.targetChf.toString());
+    const updatedSavedAmount = parseFloat(updatedGoal!.savedChf.toString());
+    const progressPercentage = updatedTargetAmount > 0 ? Math.min((updatedSavedAmount / updatedTargetAmount) * 100, 100) : 0;
+
+    // Update user's global streak (not goal-specific)
+    const streakUpdate = await updateUserStreak(payload.userId);
 
     // Check for newly unlocked achievements
     const newAchievements = await checkAndAwardAchievements(payload.userId);
@@ -170,7 +185,12 @@ export default defineEventHandler(async (event) => {
         savedChf: updatedGoal!.savedChf,
         targetChf: updatedGoal!.targetChf,
         progressPercentage: Math.round(progressPercentage * 100) / 100,
-        isCompleted: savedAmount >= targetAmount
+        isCompleted: updatedSavedAmount >= updatedTargetAmount
+      },
+      streak: {
+        current: streakUpdate.currentStreak,
+        longest: streakUpdate.longestStreak,
+        isNewRecord: streakUpdate.isNewRecord
       },
       achievements: {
         newlyUnlocked: newAchievements,

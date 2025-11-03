@@ -182,3 +182,22 @@ Syfte ist eine moderne Spar-App basierend auf Nuxt.js, die es Nutzern ermöglich
 - **Muster:** Frontend lädt Daten → zeigt sie an → Benutzer-Interaktion → API-Aufruf → Daten-Refresh
 - **Beispiel:** Sparaktion erstellen → `/api/actions/create` → `/api/goals/[id]/actions` → Detailseite neu laden
 - **Lernpunkt:** Immer nach erfolgreichen Mutationen die relevanten Daten neu laden
+
+### Streak-System & Automatisches Tracking
+- **Implementierung:** `server/utils/streaks.ts` mit `updateUserStreak()` und `getCurrentStreak()`
+- **Logik:** Automatische Streak-Aktualisierung bei jedem Sparvorgang in `add-with-action.post.ts`
+- **Date-Handling:** Vergleich mit `isSameDay()` Helper für Streak-Kontinuität (gestern = +1, heute = gleich, sonst reset)
+- **DB-Felder:** `current_count`, `longest_count`, `last_save_date` in `streaks` Tabelle
+- **Lernpunkt:** Streak-Update NACH erfolgreicher Transaktion, damit keine inkonsistenten Daten entstehen
+
+### Goal Completion & Business Logic
+- **Completion Check:** `savedChf >= targetChf` definiert abgeschlossene Ziele
+- **Backend Validation:** `/api/savings/add-with-action` wirft Error 400 bei Saving zu completed goals
+- **Frontend Filtering:** Dashboard filtert aktive Ziele: `goals.filter(g => !g.isCompleted)` für Quick Save
+- **UI-Feedback:** 
+  - Grüner Badge "Erreicht!" mit Check-Icon
+  - Erfolgs-Message mit Confetti-Emoji 🎉
+  - Lösch-Button (roter Trash-Icon) nur bei completed goals
+  - Fortschrittsbalken limitiert auf `Math.min(100, percentage)` - niemals über 100%
+- **User Flow:** Completed Goal → Anzeige mit Success-UI → Löschen möglich → Redirect zu Dashboard
+- **Lernpunkt:** Business Logic (Completion Check) im Backend UND Frontend synchron halten

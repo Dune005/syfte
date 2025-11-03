@@ -99,6 +99,16 @@ export default defineEventHandler(async (event) => {
       };
     });
 
+    // Calculate total of all goals (sum of all targets)
+    const totalGoalsTarget = goalsWithProgress.reduce((sum, goal) => {
+      return sum + parseFloat(goal.targetChf.toString());
+    }, 0);
+
+    // Calculate total saved across all goals
+    const totalGoalsSaved = goalsWithProgress.reduce((sum, goal) => {
+      return sum + parseFloat(goal.savedChf.toString());
+    }, 0);
+
     // 4. Get current streak
     const [currentStreak] = await db
       .select({
@@ -134,6 +144,13 @@ export default defineEventHandler(async (event) => {
         },
         todaySaved: todaySaved,
         goals: goalsWithProgress,
+        totalGoals: {
+          targetChf: totalGoalsTarget,
+          savedChf: totalGoalsSaved,
+          progressPercentage: totalGoalsTarget > 0 
+            ? Math.round((totalGoalsSaved / totalGoalsTarget) * 100 * 100) / 100 
+            : 0
+        },
         streak: currentStreak ? {
           current: currentStreak.currentCount,
           longest: currentStreak.longestCount

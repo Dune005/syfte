@@ -70,8 +70,20 @@
           v-for="goal in goals"
           :key="goal.id"
           class="goal-card"
-          @click="navigateToGoal(goal.id)"
+          :class="{ 'goal-completed': goal.isCompleted }"
+          @click="!goal.isCompleted && navigateToGoal(goal.id)"
         >
+          <!-- Completed Badge -->
+          <div v-if="goal.isCompleted" class="completed-badge">
+            <Check :size="16" color="white" />
+            <span>Erreicht!</span>
+          </div>
+          
+          <!-- Delete Icon for Completed Goals -->
+          <div v-if="goal.isCompleted" class="delete-goal-icon" @click.stop="deleteGoal(goal)">
+            <Trash2 :size="18" color="#EF4444" />
+          </div>
+
           <div class="goal-image">
             <img :src="goal.image" :alt="goal.name" />
           </div>
@@ -81,11 +93,11 @@
               <span class="amount">{{ goal.current }} CHF / {{ goal.target }} CHF</span>
               <div class="progress-bar">
                 <div class="progress-bg"></div>
-                <div class="progress-fill" :style="{ width: (goal.current / goal.target * 100) + '%' }"></div>
+                <div class="progress-fill" :style="{ width: Math.min(100, (goal.current / goal.target * 100)) + '%' }"></div>
               </div>
             </div>
           </div>
-          <div class="goal-star" @click.stop="toggleFavorite(goal)">
+          <div v-if="!goal.isCompleted" class="goal-star" @click.stop="toggleFavorite(goal)">
             <svg 
               v-if="goal.isFavorite"
               width="20" 
@@ -266,8 +278,8 @@
             <p>CHF {{ userStats.allTime.amount }}</p>
           </div>
           <div class="stat-card">
-            <h4>Aktuelles Ziel</h4>
-            <p>CHF {{ currentGoalTarget }}</p>
+            <h4>Alle Sparziele</h4>
+            <p>CHF {{ totalGoals.targetChf }}</p>
           </div>
           <div class="stat-card">
             <h4>Streak</h4>
@@ -326,7 +338,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { Plus, CirclePlus, Check, CircleFadingPlus, Star } from 'lucide-vue-next'
+import { Plus, CirclePlus, Check, CircleFadingPlus, Star, Trash2 } from 'lucide-vue-next'
 
 const router = useRouter()
 
@@ -359,7 +371,7 @@ const isSavingProfile = ref(false)
 
 const userStats = ref(null)
 const userStreak = ref({ current: 0, longest: 0 })
-const currentGoalTarget = ref(0)
+const totalGoals = ref({ targetChf: 0, savedChf: 0, progressPercentage: 0 })
 
 const goals = ref([])
 
@@ -426,25 +438,36 @@ const fetchGoals = async () => {
           current: normalizeAmount(goal.savedChf),
           target: normalizeAmount(goal.targetChf),
           image: goal.imageUrl || '/images/syfte_Schaf/syfte_Schaf.png',
-          isFavorite: Boolean(goal.isFavorite)
+          isFavorite: Boolean(goal.isFavorite),
+          isCompleted: normalizeAmount(goal.savedChf) >= normalizeAmount(goal.targetChf)
         }))
       : []
 
     goals.value = mappedGoals
 
-    const favoriteGoal = goals.value.find(g => g.isFavorite)
-    if (favoriteGoal) {
-      currentGoalTarget.value = favoriteGoal.target
-    } else if (goals.value.length > 0) {
-      currentGoalTarget.value = goals.value[0].target
+    // Load total goals data (sum of all goals)
+    if (dashboardResponse?.dashboard?.totalGoals) {
+      totalGoals.value = {
+        targetChf: normalizeAmount(dashboardResponse.dashboard.totalGoals.targetChf),
+        savedChf: normalizeAmount(dashboardResponse.dashboard.totalGoals.savedChf),
+        progressPercentage: dashboardResponse.dashboard.totalGoals.progressPercentage || 0
+      }
     } else {
-      currentGoalTarget.value = 0
+      totalGoals.value = { targetChf: 0, savedChf: 0, progressPercentage: 0 }
+    }
+
+    // Load streak data from dashboard
+    if (dashboardResponse?.dashboard?.streak) {
+      userStreak.value = {
+        current: dashboardResponse.dashboard.streak.current || 0,
+        longest: dashboardResponse.dashboard.streak.longest || 0
+      }
     }
   } catch (error) {
     console.error('Fehler beim Laden der Sparziele:', error)
 
     if (goals.value.length === 0) {
-      currentGoalTarget.value = 0
+      totalGoals.value = { targetChf: 0, savedChf: 0, progressPercentage: 0 }
     }
   }
 }
@@ -455,26 +478,37 @@ const selectAction = async (action) => {
   executingAction.value = action.id
   
   try {
-    // Finde das Favoritenziel des Benutzers
-    const favoriteGoal = goals.value.find(g => g.isFavorite)
+    // Filter nur aktive (nicht abgeschlossene) Ziele
+    const activeGoals = goals.value.filter(g => !g.isCompleted)
     
-    if (!favoriteGoal) {
-      // Wenn kein Favorit gesetzt ist, das erste Ziel verwenden
-      if (goals.value.length > 0) {
-        const firstGoal = goals.value[0]
-        await addActionToGoal(action.id, firstGoal.id)
-      } else {
-        // Keine Ziele vorhanden, zeige Hinweis
-        executingAction.value = null
-        alert('Bitte erstelle zuerst ein Sparziel.')
-      }
-    } else {
+    if (activeGoals.length === 0) {
+      executingAction.value = null
+      alert('Alle deine Sparziele sind bereits erreicht! Erstelle ein neues Ziel, um weiterzusparen.')
+      return
+    }
+    
+    // Finde das Favoritenziel unter den aktiven Zielen
+    const favoriteGoal = activeGoals.find(g => g.isFavorite)
+    
+    if (favoriteGoal) {
       await addActionToGoal(action.id, favoriteGoal.id)
+    } else {
+      // Wenn kein Favorit unter aktiven Zielen, nimm das erste aktive Ziel
+      await addActionToGoal(action.id, activeGoals[0].id)
     }
   } catch (error) {
     console.error('Fehler beim Auswählen der Aktion:', error)
     executingAction.value = null
-    alert('Fehler beim Hinzufügen der Sparaktion.')
+    
+    // Check if error message contains "bereits erreicht"
+    const errorMessage = error?.data?.statusMessage || error?.message || ''
+    if (errorMessage.includes('bereits erreicht')) {
+      alert(errorMessage)
+      // Reload goals to update completion status
+      await fetchGoals()
+    } else {
+      alert('Fehler beim Hinzufügen der Sparaktion.')
+    }
   }
 }
 
@@ -506,6 +540,16 @@ const addActionToGoal = async (actionId, goalId) => {
     const goal = goals.value.find(g => g.id === goalId)
     if (goal && response.goal) {
       goal.current = parseFloat(response.goal.savedChf)
+      // Update isCompleted status
+      goal.isCompleted = goal.current >= goal.target
+    }
+
+    // Update streak data if available
+    if (response.streak) {
+      userStreak.value = {
+        current: response.streak.current || 0,
+        longest: response.streak.longest || 0
+      }
     }
 
     // Check if new achievements were unlocked and update profile title
@@ -526,10 +570,6 @@ const updateProfileTitle = async () => {
     const meResponse = await $fetch('/api/auth/me')
     if (meResponse?.profile?.title) {
       userProfile.value.title = meResponse.profile.title
-    }
-    // Update streak data
-    if (meResponse?.profile?.streak) {
-      userStreak.value = meResponse.profile.streak
     }
     // Also update achievements list
     if (meResponse?.profile?.achievements) {
@@ -749,20 +789,32 @@ const toggleFavorite = async (goal) => {
       goals.value.forEach(g => {
         g.isFavorite = g.id === goal.id ? !g.isFavorite : false
       })
-      
-      // Aktualisiere das aktuelle Ziel für Sparaktionen
-      const favoriteGoal = goals.value.find(g => g.isFavorite)
-      if (favoriteGoal) {
-        currentGoalTarget.value = favoriteGoal.target
-      } else if (goals.value.length > 0) {
-        currentGoalTarget.value = goals.value[0].target
-      } else {
-        currentGoalTarget.value = 0
-      }
     }
   } catch (error) {
     console.error('Fehler beim Umschalten des Favoritenstatus:', error)
     alert('Fehler beim Aktualisieren des Favoritenstatus.')
+  }
+}
+
+const deleteGoal = async (goal) => {
+  if (!confirm(`Möchtest du das Sparziel "${goal.name}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`)) {
+    return
+  }
+  
+  try {
+    const response = await $fetch(`/api/goals/${goal.id}`, {
+      method: 'DELETE'
+    })
+    
+    if (response.success) {
+      // Remove from local list
+      goals.value = goals.value.filter(g => g.id !== goal.id)
+      // Reload goals to update total stats
+      await fetchGoals()
+    }
+  } catch (error) {
+    console.error('Fehler beim Löschen des Sparziels:', error)
+    alert('Fehler beim Löschen des Sparziels. Bitte versuche es erneut.')
   }
 }
 
@@ -815,11 +867,6 @@ onMounted(async () => {
     // Set latest achievement as title
     if (meResponse?.profile?.title) {
       userProfile.value.title = meResponse.profile.title
-    }
-    
-    // Set streak data
-    if (meResponse?.profile?.streak) {
-      userStreak.value = meResponse.profile.streak
     }
     
     // Load achievements
@@ -1357,6 +1404,72 @@ const saveProfile = async ({ closeOnSuccess = true } = {}) => {
 }
 
 .goal-star:active {
+  transform: scale(0.95);
+}
+
+/* Completed Goal Styles */
+.goal-card.goal-completed {
+  opacity: 0.75;
+  cursor: default;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.1) 100%);
+  border-color: #10B981;
+}
+
+.goal-card.goal-completed:hover {
+  transform: none;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+}
+
+.goal-card.goal-completed .progress-fill {
+  background: #10B981;
+}
+
+.completed-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+  z-index: 10;
+}
+
+.completed-badge span {
+  line-height: 1;
+}
+
+.delete-goal-icon {
+  position: absolute;
+  top: 12px;
+  right: 140px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(4px);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 15;
+}
+
+.delete-goal-icon:hover {
+  background: #FEE2E2;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.delete-goal-icon:active {
   transform: scale(0.95);
 }
 
