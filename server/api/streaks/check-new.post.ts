@@ -84,19 +84,11 @@ export default defineEventHandler(async (event) => {
              date1.getDate() === date2.getDate();
     };
 
-    // Nur anzeigen wenn heute der erste Sparvorgang ist
+    // Popup nur anzeigen wenn:
+    // 1. Heute gespart wurde (lastSaveDate ist heute)
+    // 2. Streak >= 1
     const savedToday = isSameDay(new Date(lastSaveDate), todayDate);
-    
-    if (!savedToday) {
-      return {
-        success: true,
-        showPopup: false,
-        reason: 'not_saved_today'
-      };
-    }
-
-    // Popup nur anzeigen wenn Streak >= 1
-    const shouldShowPopup = streakRecord.currentCount >= 1;
+    const shouldShowPopup = savedToday && streakRecord.currentCount >= 1;
 
     if (shouldShowPopup) {
       // Setze Cookie dass Popup heute angezeigt wurde (läuft um Mitternacht ab)
