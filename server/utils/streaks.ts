@@ -3,9 +3,20 @@ import { db } from './database/connection';
 import { streaks } from './database/schema';
 
 /**
- * Update user's streak after a saving action
- * Checks if user saved yesterday to maintain streak
- * Updates current_count and longest_count accordingly
+ * Helper function to compare dates (ignoring time)
+ */
+const isSameDay = (date1: Date | null, date2: Date): boolean => {
+  if (!date1) return false;
+  return date1.getFullYear() === date2.getFullYear() &&
+         date1.getMonth() === date2.getMonth() &&
+         date1.getDate() === date2.getDate();
+};
+
+/**
+ * OPTIMIERTE Streak-Verwaltung:
+ * - Schreibt NUR 1x pro Tag in die DB (nicht bei jedem Sparvorgang)
+ * - Löscht alle Streak-Einträge bei Unterbrechung (wenn ein Tag ausgelassen wurde)
+ * - Effiziente Prüfung ob heute bereits gespart wurde
  */
 export async function updateUserStreak(userId: number, goalId?: number): Promise<{
   currentStreak: number;
@@ -16,8 +27,15 @@ export async function updateUserStreak(userId: number, goalId?: number): Promise
     const today = new Date();
     const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
-    // Get or create streak record
-    let [streakRecord] = await db
+    // Hole den aktuellen Streak-Eintrag für diesen User (global oder goal-spezifisch)
+    let streakRecord: {
+      id: number;
+      userId: number;
+      goalId: number | null;
+      currentCount: number;
+      longestCount: number;
+      lastSaveDate: Date | null;
+    } | null = (await db
       .select()
       .from(streaks)
       .where(
@@ -25,11 +43,35 @@ export async function updateUserStreak(userId: number, goalId?: number): Promise
           ? and(eq(streaks.userId, userId), eq(streaks.goalId, goalId))
           : and(eq(streaks.userId, userId), isNull(streaks.goalId))
       )
-      .limit(1);
+      .limit(1))[0] || null;
 
-    // If no streak record exists, create one
+    // ✅ OPTIMIZATION 1: Wenn heute bereits gespart wurde → KEINE DB-Operation
+    if (streakRecord && isSameDay(streakRecord.lastSaveDate, todayDate)) {
+      return {
+        currentStreak: streakRecord.currentCount,
+        longestStreak: streakRecord.longestCount,
+        isNewRecord: false
+      };
+    }
+
+    // Berechne gestern
+    const yesterday = new Date(todayDate);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    // ✅ OPTIMIZATION 2: Wenn Streak unterbrochen wurde → ALLE Einträge löschen
+    if (streakRecord && !isSameDay(streakRecord.lastSaveDate, yesterday)) {
+      // Ein oder mehrere Tage wurden ausgelassen → Streak-Serie ist unterbrochen
+      // Lösche ALLE Streak-Einträge für diesen User (da irrelevant)
+      await db
+        .delete(streaks)
+        .where(eq(streaks.userId, userId));
+      
+      streakRecord = null; // Reset, wird gleich neu erstellt
+    }
+
+    // Kein Eintrag vorhanden oder Serie wurde unterbrochen → Neuer Start
     if (!streakRecord) {
-      const newStreakIds = await db
+      await db
         .insert(streaks)
         .values({
           userId,
@@ -37,8 +79,7 @@ export async function updateUserStreak(userId: number, goalId?: number): Promise
           currentCount: 1,
           longestCount: 1,
           lastSaveDate: todayDate
-        })
-        .$returningId();
+        });
 
       return {
         currentStreak: 1,
@@ -47,48 +88,12 @@ export async function updateUserStreak(userId: number, goalId?: number): Promise
       };
     }
 
-    // Helper function to compare dates (ignoring time)
-    const isSameDay = (date1: Date | null, date2: Date): boolean => {
-      if (!date1) return false;
-      return date1.getFullYear() === date2.getFullYear() &&
-             date1.getMonth() === date2.getMonth() &&
-             date1.getDate() === date2.getDate();
-    };
+    // ✅ Streak continues (gestern gespart) → Increment
+    const newCurrentCount = streakRecord.currentCount + 1;
+    const newLongestCount = Math.max(streakRecord.longestCount, newCurrentCount);
+    const isNewRecord = newCurrentCount > streakRecord.longestCount;
 
-    // If already saved today, no update needed
-    if (isSameDay(streakRecord.lastSaveDate, todayDate)) {
-      return {
-        currentStreak: streakRecord.currentCount,
-        longestStreak: streakRecord.longestCount,
-        isNewRecord: false
-      };
-    }
-
-    // Calculate yesterday's date
-    const yesterday = new Date(todayDate);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    let newCurrentCount: number;
-    let newLongestCount: number;
-    let isNewRecord = false;
-
-    // Check if user saved yesterday (streak continues)
-    if (isSameDay(streakRecord.lastSaveDate, yesterday)) {
-      // Streak continues - increment
-      newCurrentCount = streakRecord.currentCount + 1;
-      newLongestCount = Math.max(streakRecord.longestCount, newCurrentCount);
-      
-      // Check if new record
-      if (newCurrentCount > streakRecord.longestCount) {
-        isNewRecord = true;
-      }
-    } else {
-      // Streak broken - reset to 1
-      newCurrentCount = 1;
-      newLongestCount = streakRecord.longestCount; // Keep longest count
-    }
-
-    // Update streak record
+    // Update streak record mit neuem Tag
     await db
       .update(streaks)
       .set({

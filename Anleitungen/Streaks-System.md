@@ -46,6 +46,48 @@ Tag 5 (Freitag):
 - `longestCount`: Längster jemals erreichter Streak
 - `lastSaveDate`: Datum des letzten Sparvorgangs
 
+### ⚡ Optimierte Streak-Verwaltung (Stand: Nov 2024)
+
+**Wichtige Änderungen:**
+
+1. **Nur 1 DB-Eintrag pro Tag**
+   - Früher: Bei jedem Sparvorgang wurde geprüft und geschrieben
+   - Jetzt: Wenn `lastSaveDate` = heute → **KEINE DB-Operation**
+   - Reduziert unnötige DB-Zugriffe bei mehrfachem Sparen am Tag
+
+2. **Automatisches Cleanup bei Streak-Unterbrechung**
+   - Wenn ein Tag ausgelassen wurde (Streak unterbrochen)
+   - Werden **ALLE Streak-Einträge des Users gelöscht**
+   - Rationale: Alte Daten sind irrelevant, User startet komplett neu
+   - Spart Speicherplatz und hält Tabelle schlank
+
+3. **Effiziente Logik-Flow:**
+   ```typescript
+   // 1. Hole Streak-Record
+   const streakRecord = await db.select().from(streaks)...
+   
+   // 2. Wenn heute bereits gespart → RETURN (keine DB-Op)
+   if (isSameDay(streakRecord.lastSaveDate, today)) {
+     return { currentStreak, longestStreak, isNewRecord: false }
+   }
+   
+   // 3. Wenn Streak unterbrochen → DELETE alle User-Streaks
+   if (!isSameDay(streakRecord.lastSaveDate, yesterday)) {
+     await db.delete(streaks).where(eq(streaks.userId, userId))
+     // Neuer Eintrag wird gleich erstellt
+   }
+   
+   // 4. Streak fortsetzen oder neu starten
+   if (gestern gespart) { currentCount++ }
+   else { INSERT neuer Eintrag mit count=1 }
+   ```
+
+**Performance-Vorteile:**
+- ✅ Weniger DB-Writes (nur 1x pro Tag statt bei jedem Sparvorgang)
+- ✅ Kleinere `streaks`-Tabelle (Auto-Cleanup bei Unterbrechung)
+- ✅ Schnellere Abfragen (weniger Einträge)
+- ✅ Keine redundanten Daten
+
 ### API-Endpunkte
 
 #### 1. `/api/streaks/current` (GET)
