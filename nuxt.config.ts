@@ -9,8 +9,12 @@ export default defineNuxtConfig({
     host: '0.0.0.0' // Ermöglicht Zugriff von anderen Geräten im Netzwerk
   },
 
-  // Sicherheitsheader über Nitro konfigurieren
+  // Server-Side Rendering für Vercel aktivieren
+  ssr: true,
+
+  // Nitro-Konfiguration für Vercel
   nitro: {
+    preset: 'vercel',
     routeRules: {
       '/**': {
         headers: {
