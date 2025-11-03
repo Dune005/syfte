@@ -49,7 +49,7 @@ export default defineEventHandler(async (event) => {
     // Get additional data for each friend (streak, profile title)
     const friendIds = friendshipsData.map(f => f.friendId);
     
-    // Get streaks for all friends
+    // Get streaks for all friends (nur noch 1 Eintrag pro User)
     const friendStreaks = friendIds.length > 0 ? await db
       .select({
         userId: streaks.userId,
@@ -57,10 +57,7 @@ export default defineEventHandler(async (event) => {
         longestCount: streaks.longestCount
       })
       .from(streaks)
-      .where(and(
-        or(...friendIds.map(id => eq(streaks.userId, id))),
-        isNull(streaks.goalId)
-      )) : [];
+      .where(or(...friendIds.map(id => eq(streaks.userId, id)))) : [];
 
     // Get latest achievement (profile title) for all friends
     const friendAchievements = friendIds.length > 0 ? await db

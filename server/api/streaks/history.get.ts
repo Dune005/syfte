@@ -26,8 +26,8 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    // Get streak history with goal details
-    const streakHistory = await db
+    // Get streak record for this user (nur noch 1 Eintrag pro User)
+    const [streakRecord] = await db
       .select({
         id: streaks.id,
         goalId: streaks.goalId,
@@ -40,30 +40,44 @@ export default defineEventHandler(async (event) => {
       .from(streaks)
       .leftJoin(goals, eq(streaks.goalId, goals.id))
       .where(eq(streaks.userId, payload.userId))
-      .orderBy(desc(streaks.longestCount));
+      .limit(1);
 
-    // Calculate overall statistics
-    const totalCurrentStreak = streakHistory.reduce((sum, streak) => sum + (streak.currentCount || 0), 0);
-    const totalLongestStreak = Math.max(...streakHistory.map(streak => streak.longestCount || 0), 0);
-    const activeStreaks = streakHistory.filter(streak => (streak.currentCount || 0) > 0).length;
+    // Falls kein Streak-Eintrag existiert
+    if (!streakRecord) {
+      return {
+        success: true,
+        streak: null,
+        statistics: {
+          currentStreak: 0,
+          longestStreak: 0,
+          isActive: false,
+          currentGoal: null
+        }
+      };
+    }
 
-    // Find best performing goal
-    const bestGoal = streakHistory.reduce((best, current) => {
-      return (current.longestCount || 0) > (best.longestCount || 0) ? current : best;
-    }, streakHistory[0] || null);
+    // Streak-Statistiken
+    const isActive = (streakRecord.currentCount || 0) > 0;
 
     return {
       success: true,
-      streakHistory,
+      streak: {
+        id: streakRecord.id,
+        goalId: streakRecord.goalId,
+        currentCount: streakRecord.currentCount,
+        longestCount: streakRecord.longestCount,
+        lastSaveDate: streakRecord.lastSaveDate,
+        goalTitle: streakRecord.goalTitle,
+        goalImageUrl: streakRecord.goalImageUrl
+      },
       statistics: {
-        totalCurrentStreak,
-        totalLongestStreak,
-        activeStreaks,
-        totalGoals: streakHistory.length,
-        bestPerformingGoal: bestGoal ? {
-          goalId: bestGoal.goalId,
-          goalTitle: bestGoal.goalTitle,
-          longestStreak: bestGoal.longestCount
+        currentStreak: streakRecord.currentCount || 0,
+        longestStreak: streakRecord.longestCount || 0,
+        isActive,
+        currentGoal: streakRecord.goalId ? {
+          goalId: streakRecord.goalId,
+          goalTitle: streakRecord.goalTitle,
+          goalImageUrl: streakRecord.goalImageUrl
         } : null
       }
     };

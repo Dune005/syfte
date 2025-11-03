@@ -94,8 +94,8 @@ export default defineEventHandler(async (event) => {
       .where(eq(goals.ownerId, payload.userId))
       .orderBy(sql`(saved_chf / target_chf) DESC`);
 
-    // Get current streaks
-    const currentStreaks = await db
+    // Get current streak (nur noch 1 Eintrag pro User)
+    const [currentStreak] = await db
       .select({
         goalId: streaks.goalId,
         currentCount: streaks.currentCount,
@@ -104,9 +104,11 @@ export default defineEventHandler(async (event) => {
       })
       .from(streaks)
       .leftJoin(goals, eq(streaks.goalId, goals.id))
-      .where(eq(streaks.userId, payload.userId));
+      .where(eq(streaks.userId, payload.userId))
+      .limit(1);
 
-    const totalCurrentStreak = currentStreaks.reduce((sum, streak) => sum + (streak.currentCount || 0), 0);
+    const totalCurrentStreak = currentStreak?.currentCount || 0;
+    const totalLongestStreak = currentStreak?.longestCount || 0;
 
     return {
       success: true,
@@ -125,7 +127,7 @@ export default defineEventHandler(async (event) => {
         },
         streaks: {
           current: totalCurrentStreak,
-          longest: Math.max(...currentStreaks.map(s => s.longestCount || 0), 0)
+          longest: totalLongestStreak
         },
         goals: {
           total: goalsProgress.length,

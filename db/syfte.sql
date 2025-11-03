@@ -180,9 +180,7 @@ CREATE UNIQUE INDEX `uq_day_user_goal` ON `daily_aggregates` (`day_date`, `user_
 
 CREATE INDEX `daily_aggregates_index_16` ON `daily_aggregates` (`user_id`, `day_date`);
 
-CREATE UNIQUE INDEX `uq_streak_user_goal` ON `streaks` (`user_id`, `goal_id`);
-
-CREATE INDEX `streaks_index_18` ON `streaks` (`user_id`);
+CREATE UNIQUE INDEX `uq_streak_user` ON `streaks` (`user_id`);
 
 CREATE INDEX `export_jobs_index_19` ON `export_jobs` (`user_id`);
 
