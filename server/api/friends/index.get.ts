@@ -1,7 +1,7 @@
 import { verifyJWT, getAuthCookie } from '../../utils/auth';
 import { db } from '../../utils/database/connection';
-import { friendships, users } from '../../utils/database/schema';
-import { eq, and, or } from 'drizzle-orm';
+import { friendships, users, streaks, userAchievements, achievements } from '../../utils/database/schema';
+import { eq, and, or, isNull, desc } from 'drizzle-orm';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -46,18 +46,64 @@ export default defineEventHandler(async (event) => {
         eq(friendships.status, 'accepted')
       ));
 
-    const friends = friendshipsData.map(friendship => ({
-      friendshipId: friendship.friendshipId,
-      user: {
-        id: friendship.friendId,
-        username: friendship.username,
-        firstName: friendship.firstName,
-        lastName: friendship.lastName,
-        profileImageUrl: friendship.profileImageUrl,
-        totalSavedChf: friendship.totalSavedChf
-      },
-      friendsSince: friendship.createdAt
-    }));
+    // Get additional data for each friend (streak, profile title)
+    const friendIds = friendshipsData.map(f => f.friendId);
+    
+    // Get streaks for all friends
+    const friendStreaks = friendIds.length > 0 ? await db
+      .select({
+        userId: streaks.userId,
+        currentCount: streaks.currentCount,
+        longestCount: streaks.longestCount
+      })
+      .from(streaks)
+      .where(and(
+        or(...friendIds.map(id => eq(streaks.userId, id))),
+        isNull(streaks.goalId)
+      )) : [];
+
+    // Get latest achievement (profile title) for all friends
+    const friendAchievements = friendIds.length > 0 ? await db
+      .select({
+        userId: userAchievements.userId,
+        achievementName: achievements.name,
+        awardedAt: userAchievements.awardedAt
+      })
+      .from(userAchievements)
+      .innerJoin(achievements, eq(userAchievements.achievementId, achievements.id))
+      .where(or(...friendIds.map(id => eq(userAchievements.userId, id))))
+      .orderBy(desc(userAchievements.awardedAt)) : [];
+
+    // Group achievements by userId and get latest
+    const latestAchievementsByUser = new Map();
+    friendAchievements.forEach(ach => {
+      if (!latestAchievementsByUser.has(ach.userId)) {
+        latestAchievementsByUser.set(ach.userId, ach.achievementName);
+      }
+    });
+
+    const friends = friendshipsData.map(friendship => {
+      const streak = friendStreaks.find(s => s.userId === friendship.friendId);
+      const profileTitle = latestAchievementsByUser.get(friendship.friendId);
+
+      return {
+        friendshipId: friendship.friendshipId,
+        user: {
+          id: friendship.friendId,
+          username: friendship.username,
+          firstName: friendship.firstName,
+          lastName: friendship.lastName,
+          profileImageUrl: friendship.profileImageUrl,
+          totalSavedChf: friendship.totalSavedChf,
+          profileTitle: profileTitle || null,
+          streak: {
+            current: streak?.currentCount || 0,
+            longest: streak?.longestCount || 0
+          }
+        },
+        friendsSince: friendship.createdAt
+      };
+    });
 
     return {
       success: true,

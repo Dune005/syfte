@@ -58,7 +58,7 @@ export default defineEventHandler(async (event) => {
       .update(friendships)
       .set({
         status: 'accepted',
-        updatedAt: new Date()
+        respondedAt: new Date()
       })
       .where(eq(friendships.id, parseInt(requestId)));
 

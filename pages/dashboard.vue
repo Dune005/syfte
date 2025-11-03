@@ -53,7 +53,7 @@
         </div>
       </div>
       <div v-else class="no-actions">
-        <p>Lade Sparaktionen...</p>
+        <p>Keine Sparaktionen...</p>
       </div>
       
       <div class="actions-note">
@@ -128,6 +128,13 @@
       <div class="add-goal-button" @click="showAddGoalModal = true">
         <div class="add-circle">
           <Plus :size="32" color="white" />
+        </div>
+      </div>
+      
+      <!-- Friends Button -->
+      <div class="friends-button" @click="navigateToFriends">
+        <div class="friends-circle">
+          <Users :size="28" color="white" />
         </div>
       </div>
     </div>
@@ -346,7 +353,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { Plus, CirclePlus, Check, CircleFadingPlus, Star, Trash2 } from 'lucide-vue-next'
+import { Plus, CirclePlus, Check, CircleFadingPlus, Star, Trash2, Users } from 'lucide-vue-next'
 
 const router = useRouter()
 
@@ -394,6 +401,11 @@ const currentStreakData = ref({
   count: 0,
   weekData: [false, false, false, false, false, false, false]
 })
+
+// Navigation
+const navigateToFriends = () => {
+  router.push('/friends')
+}
 
 const goalImageInput = ref(null)
 const goalImageFile = ref(null)
@@ -1538,6 +1550,71 @@ const saveProfile = async ({ closeOnSuccess = true } = {}) => {
 
 .add-goal-button:active {
   transform: scale(0.95) rotate(90deg);
+}
+
+/* Friends Button */
+.friends-button {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 100;
+}
+
+.friends-button:hover {
+  transform: scale(1.1);
+}
+
+.friends-button:active {
+  transform: scale(0.95);
+}
+
+.friends-circle {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #35C2C1 0%, #2BA39E 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(53, 194, 193, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.friends-circle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
+}
+
+.friends-button:hover .friends-circle::before {
+  transform: translateX(0);
+}
+
+.friends-circle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s ease, height 0.6s ease;
+}
+
+.friends-button:active .friends-circle::after {
+  width: 100px;
+  height: 100px;
 }
 
 .add-circle {

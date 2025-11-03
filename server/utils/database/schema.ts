@@ -140,7 +140,7 @@ export const friendships = mysqlTable('friendships', {
   addresseeId: bigint('addressee_id', { mode: 'number' }).notNull(),
   status: varchar('status', { length: 20 }).notNull().default('pending'), // pending, accepted, blocked
   createdAt: datetime('created_at').notNull().default(new Date()),
-  updatedAt: datetime('updated_at').notNull().default(new Date())
+  respondedAt: datetime('responded_at')
 });
 
 // Shared Goals (for friends to save together)
