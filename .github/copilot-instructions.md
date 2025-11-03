@@ -201,3 +201,21 @@ Syfte ist eine moderne Spar-App basierend auf Nuxt.js, die es Nutzern ermöglich
   - Fortschrittsbalken limitiert auf `Math.min(100, percentage)` - niemals über 100%
 - **User Flow:** Completed Goal → Anzeige mit Success-UI → Löschen möglich → Redirect zu Dashboard
 - **Lernpunkt:** Business Logic (Completion Check) im Backend UND Frontend synchron halten
+
+### Streak-Popup & Cookie-basiertes Tracking
+- **Implementierung:** `StreakPopup.vue` Component mit Flamme, Zahl, Wochenansicht (Mo-So), und glückliches Schaf
+- **Design:**
+  - Flamme (140x265px) hinter der Zahl via absolute positioning und z-index layering
+  - Zahl: 120px, weiß mit 5px türkiser Kontur (`-webkit-text-stroke`)
+  - Lucide Icons (CheckCircle2, Circle) für gespeicherte/nicht gespeicherte Tage
+  - Responsive Design für 414px und 360px Breakpoints
+- **Popup-Logik:** 
+  - Wird nur beim **ersten Sparvorgang des Tages** angezeigt
+  - Cookie `streak_popup_shown_{userId}` verhindert mehrfache Anzeige am gleichen Tag
+  - Cookie läuft um Mitternacht ab (expires tomorrow 00:00:00)
+  - API `/api/streaks/check-new` prüft Cookie und gibt `showPopup: boolean` zurück
+- **Wochenansicht:** 
+  - `/api/streaks/current` liefert `weekData: boolean[7]` für aktuelle Woche (Mo-So)
+  - Berechnung mit Montags-Offset: `todayDayOfWeek === 0 ? -6 : 1 - todayDayOfWeek`
+- **Integration:** Dashboard ruft `checkAndShowStreakPopup()` nach erfolgreichem Sparvorgang auf
+- **Lernpunkt:** Cookie-basiertes Session-Tracking effektiv für tägliche UI-State-Verwaltung; siehe `Anleitungen/Streaks-System.md` für vollständige Dokumentation

@@ -5,8 +5,9 @@ import { verifyJWT, getAuthCookie } from '../../utils/auth';
 
 /**
  * POST /api/streaks/check-new
- * Prüft, ob gerade ein neuer Streak erstellt wurde (von 0 auf 1) oder fortgesetzt wurde
- * Wird nach jedem Sparvorgang aufgerufen um zu entscheiden, ob Streak-Popup angezeigt werden soll
+ * Prüft, ob das Streak-Popup angezeigt werden soll
+ * Wird NUR beim ERSTEN Sparvorgang des Tages angezeigt
+ * Trackt ob Popup heute schon gezeigt wurde via Session/Cookie
  */
 export default defineEventHandler(async (event) => {
   try {
@@ -31,6 +32,19 @@ export default defineEventHandler(async (event) => {
       });
     }
 
+    // Prüfe ob Popup heute schon angezeigt wurde (via Cookie)
+    const cookieName = `streak_popup_shown_${payload.userId}`;
+    const popupShownToday = getCookie(event, cookieName);
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    
+    if (popupShownToday === today) {
+      return {
+        success: true,
+        showPopup: false,
+        reason: 'already_shown_today'
+      };
+    }
+
     // Aktuellen globalen Streak abrufen
     const [streakRecord] = await db
       .select({
@@ -47,8 +61,8 @@ export default defineEventHandler(async (event) => {
       )
       .limit(1);
 
-    // Wenn kein Streak-Record existiert oder current = 0, dann kein Popup
-    if (!streakRecord || streakRecord.currentCount === 0) {
+    // Wenn kein Streak-Record existiert, kein Popup
+    if (!streakRecord) {
       return {
         success: true,
         showPopup: false,
@@ -57,8 +71,8 @@ export default defineEventHandler(async (event) => {
     }
 
     // Prüfen ob heute gespart wurde
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const todayDate = new Date();
+    todayDate.setHours(0, 0, 0, 0);
     
     const lastSaveDate = streakRecord.lastSaveDate;
     if (!lastSaveDate) {
@@ -75,9 +89,8 @@ export default defineEventHandler(async (event) => {
              date1.getDate() === date2.getDate();
     };
 
-    // Nur anzeigen wenn heute der erste Sparvorgang ist (lastSaveDate ist heute)
-    // UND der Streak fortgesetzt wurde (currentCount > 1) ODER neu gestartet wurde (currentCount === 1)
-    const savedToday = isSameDay(new Date(lastSaveDate), today);
+    // Nur anzeigen wenn heute der erste Sparvorgang ist
+    const savedToday = isSameDay(new Date(lastSaveDate), todayDate);
     
     if (!savedToday) {
       return {
@@ -87,10 +100,22 @@ export default defineEventHandler(async (event) => {
       };
     }
 
-    // Popup anzeigen wenn:
-    // 1. Neuer Streak gestartet (currentCount = 1)
-    // 2. Streak fortgesetzt (currentCount > 1)
+    // Popup nur anzeigen wenn Streak >= 1
     const shouldShowPopup = streakRecord.currentCount >= 1;
+
+    if (shouldShowPopup) {
+      // Setze Cookie dass Popup heute angezeigt wurde (läuft um Mitternacht ab)
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
+      
+      setCookie(event, cookieName, today, {
+        expires: tomorrow,
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/'
+      });
+    }
 
     return {
       success: true,
