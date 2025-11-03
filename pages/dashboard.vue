@@ -1,5 +1,10 @@
 <template>
   <div class="dashboard">
+    <!-- Skeleton Loader -->
+    <SkeletonLoader v-if="isLoading" />
+    
+    <!-- Actual Dashboard Content -->
+    <template v-else>
     <!-- Header mit Profilbild und Tagesbetrag -->
     <div class="header">
       <div class="header-content">
@@ -347,6 +352,7 @@
       :week-data="currentStreakData.weekData"
       @close="closeStreakPopup"
     />
+    </template>
   </div>
 </template>
 
@@ -358,6 +364,7 @@ import { Plus, CirclePlus, Check, CircleFadingPlus, Star, Trash2, Users } from '
 const router = useRouter()
 
 // State
+const isLoading = ref(true)
 const todaySavings = ref(20)
 const showAddGoalModal = ref(false)
 const showProfileModal = ref(false)
@@ -894,50 +901,59 @@ const logout = async () => {
 
 // Lifecycle
 onMounted(async () => {
-  await fetchActions()
-  await fetchGoals()
+  isLoading.value = true
   
   try {
-    const dashboardResponse = await $fetch('/api/dashboard')
-    if (dashboardResponse?.dashboard?.user) {
-      const user = dashboardResponse.dashboard.user
-      currentUser.value = user
-      userProfile.value.name = `${user.firstName} ${user.lastName}`
-      // populate profile image if available
-      if (user.profileImageUrl) {
-        editProfileImageUrl.value = user.profileImageUrl
-        profileImagePreview.value = user.profileImageUrl
+    // Parallel loading of main data
+    await Promise.all([
+      fetchActions(),
+      fetchGoals()
+    ])
+    
+    try {
+      const dashboardResponse = await $fetch('/api/dashboard')
+      if (dashboardResponse?.dashboard?.user) {
+        const user = dashboardResponse.dashboard.user
+        currentUser.value = user
+        userProfile.value.name = `${user.firstName} ${user.lastName}`
+        // populate profile image if available
+        if (user.profileImageUrl) {
+          editProfileImageUrl.value = user.profileImageUrl
+          profileImagePreview.value = user.profileImageUrl
+        }
       }
+    } catch (error) {
+      console.error('Fehler beim Laden der Benutzerdaten:', error)
     }
-  } catch (error) {
-    console.error('Fehler beim Laden der Benutzerdaten:', error)
-  }
-  
-  try {
-    const savingsResponse = await $fetch('/api/savings/stats')
-    todaySavings.value = savingsResponse.stats?.today?.amount || 0
-    userStats.value = savingsResponse.stats
-  } catch (error) {
-    console.error('Fehler beim Laden der Sparstatistiken:', error)
-  }
+    
+    try {
+      const savingsResponse = await $fetch('/api/savings/stats')
+      todaySavings.value = savingsResponse.stats?.today?.amount || 0
+      userStats.value = savingsResponse.stats
+    } catch (error) {
+      console.error('Fehler beim Laden der Sparstatistiken:', error)
+    }
 
-  try {
-    // Load user profile data with achievements
-    const meResponse = await $fetch('/api/auth/me')
-    
-    // Set latest achievement as title
-    if (meResponse?.profile?.title) {
-      userProfile.value.title = meResponse.profile.title
+    try {
+      // Load user profile data with achievements
+      const meResponse = await $fetch('/api/auth/me')
+      
+      // Set latest achievement as title
+      if (meResponse?.profile?.title) {
+        userProfile.value.title = meResponse.profile.title
+      }
+      
+      // Load achievements
+      userProfile.value.achievements = (meResponse?.profile?.achievements || []).map(achievement => ({
+        ...achievement,
+        unlocked: true
+      }))
+    } catch (error) {
+      console.error('Fehler beim Laden der Profildaten:', error)
+      userProfile.value.achievements = []
     }
-    
-    // Load achievements
-    userProfile.value.achievements = (meResponse?.profile?.achievements || []).map(achievement => ({
-      ...achievement,
-      unlocked: true
-    }))
-  } catch (error) {
-    console.error('Fehler beim Laden der Profildaten:', error)
-    userProfile.value.achievements = []
+  } finally {
+    isLoading.value = false
   }
 })
 
