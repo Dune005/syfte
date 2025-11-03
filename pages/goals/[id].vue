@@ -62,8 +62,8 @@
             class="add-action-btn" 
             @click="showCreateActionModal = true"
           >
-            <Plus :size="20" color="#35C2C1" />
-            <span>Neue Aktion</span>
+            <SquarePlus :size="20" color="white" />
+            <span>Neue Sparaktion</span>
           </button>
         </div>
 
@@ -190,7 +190,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ChevronLeft, Plus, Check, CircleFadingPlus, Trash2 } from 'lucide-vue-next'
+import { ChevronLeft, Plus, Check, CircleFadingPlus, Trash2, SquarePlus } from 'lucide-vue-next'
 
 const router = useRouter()
 const route = useRoute()
@@ -219,7 +219,8 @@ const goBack = () => {
 
 const formatCurrency = (amount) => {
   const num = typeof amount === 'string' ? parseFloat(amount) : amount
-  return `${num.toFixed(2)} CHF`
+  // Zeige ganze Zahlen ohne Kommastellen
+  return num % 1 === 0 ? `${Math.round(num)} CHF` : `${num.toFixed(2)} CHF`
 }
 
 const fetchGoalDetails = async () => {
@@ -897,13 +898,16 @@ onMounted(() => {
 
 .modal-input {
   width: 100%;
-  height: 56px;
+  height: 64px;
   border: 1px solid #E4E9F2;
-  border-radius: 12px;
-  padding: 0 16px;
+  border-radius: 16px;
+  padding: 0 20px;
   font-size: 16px;
+  font-weight: 500;
   background: #F6F8FB;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  color: #1E232C;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
 }
 
 .modal-input:focus {
@@ -912,23 +916,34 @@ onMounted(() => {
   box-shadow: 0 0 0 3px rgba(53, 194, 193, 0.2);
 }
 
+.modal-input::placeholder {
+  color: #8A97A6;
+}
+
 .modal-textarea {
   width: 100%;
   border: 1px solid #E4E9F2;
-  border-radius: 12px;
-  padding: 12px 16px;
+  border-radius: 16px;
+  padding: 16px 20px;
   font-size: 16px;
+  font-weight: 500;
   background: #F6F8FB;
+  color: #1E232C;
   resize: vertical;
-  min-height: 80px;
+  min-height: 100px;
   font-family: inherit;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
 }
 
 .modal-textarea:focus {
   outline: none;
   border-color: #35C2C1;
   box-shadow: 0 0 0 3px rgba(53, 194, 193, 0.2);
+}
+
+.modal-textarea::placeholder {
+  color: #8A97A6;
 }
 
 .error-message {

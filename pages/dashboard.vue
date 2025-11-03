@@ -332,6 +332,14 @@
         </div>
       </div>
     </div>
+
+    <!-- Streak Popup -->
+    <StreakPopup
+      :show="showStreakPopup"
+      :streak-count="currentStreakData.count"
+      :week-data="currentStreakData.weekData"
+      @close="closeStreakPopup"
+    />
   </div>
 </template>
 
@@ -378,6 +386,13 @@ const goals = ref([])
 const newGoal = ref({
   name: '',
   target: ''
+})
+
+// Streak Popup State
+const showStreakPopup = ref(false)
+const currentStreakData = ref({
+  count: 0,
+  weekData: [false, false, false, false, false, false, false]
 })
 
 const goalImageInput = ref(null)
@@ -556,6 +571,9 @@ const addActionToGoal = async (actionId, goalId) => {
     if (response.achievements?.newlyUnlocked?.length > 0) {
       await updateProfileTitle()
     }
+
+    // Check if streak popup should be shown
+    await checkAndShowStreakPopup()
   } catch (error) {
     console.error('Fehler beim Hinzufügen der Sparaktion:', error)
     alert('Fehler beim Hinzufügen der Sparaktion.')
@@ -581,6 +599,37 @@ const updateProfileTitle = async () => {
   } catch (error) {
     console.error('Fehler beim Aktualisieren des Profil-Titels:', error)
   }
+}
+
+// Check if streak popup should be shown
+const checkAndShowStreakPopup = async () => {
+  try {
+    const checkResponse = await $fetch('/api/streaks/check-new', {
+      method: 'POST'
+    })
+
+    if (checkResponse?.showPopup) {
+      // Load current streak data with weekData
+      const streakResponse = await $fetch('/api/streaks/current')
+      
+      if (streakResponse?.success && streakResponse?.streaks) {
+        currentStreakData.value = {
+          count: streakResponse.streaks.current || 0,
+          weekData: streakResponse.streaks.weekData || [false, false, false, false, false, false, false]
+        }
+        
+        // Show popup
+        showStreakPopup.value = true
+      }
+    }
+  } catch (error) {
+    console.error('Fehler beim Prüfen des Streak-Popups:', error)
+  }
+}
+
+// Close streak popup
+const closeStreakPopup = () => {
+  showStreakPopup.value = false
 }
 
 const clearGoalImage = () => {
