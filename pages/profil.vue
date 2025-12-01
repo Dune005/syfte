@@ -90,12 +90,16 @@
           </div>
         </div>
       </div>
-
+      
+      <!-- Statistics Chart Section -->
+      <div class="statistics-section">
+        <h3 class="section-title">Sparverlauf</h3>
+        <SavingsChart />
+      </div>
+      
       <!-- Achievements Section -->
       <div class="achievements-section">
-        <h3 class="section-title">Deine Auszeichnungen</h3>
-        
-        <div v-if="userProfile.achievements.length === 0" class="no-achievements">
+        <h3 class="section-title">Deine Auszeichnungen</h3>        <div v-if="userProfile.achievements.length === 0" class="no-achievements">
           <Award :size="48" color="#ccc" />
           <p>Du hast noch keine Auszeichnungen freigeschaltet.</p>
           <p class="hint">Spare fleissig weiter, um deine ersten Erfolge zu erreichen!</p>
@@ -609,6 +613,11 @@ onBeforeUnmount(() => {
   font-size: 12px;
   font-weight: 500;
   color: #888;
+}
+
+/* Statistics Section */
+.statistics-section {
+  padding: 0 20px 24px;
 }
 
 /* Achievements Section */

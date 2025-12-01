@@ -260,3 +260,28 @@ const favoriteGoal = activeGoals.find(g => g.isFavorite)
 - Daten-Refresh nur nach Mutations (nicht bei jedem Render)
 - Filter-Operationen im Frontend (kein zusätzlicher API-Call)
 - Optimistische UI-Updates wo möglich (z.B. successActions array)
+
+---
+
+## 6. Sparverlauf-Diagramm (Statistics Chart)
+
+### Übersicht
+Interaktives Liniendiagramm auf der Profil-Seite, das die Spar-Aktivität des Nutzers über verschiedene Zeiträume visualisiert.
+
+### Was wird angezeigt?
+
+**Zwei Datenlinien:**
+1. **Tägliche Sparaktionen** (Hellgrün `#63b08e`)
+   - Zeigt den gesparten Betrag pro Tag
+   - Y-Achse links: CHF-Beträge
+   - Ermöglicht Erkennung von Spar-Peaks und ruhigen Tagen
+
+2. **Gesamtsumme** (Dunkelgrün `#315549`)
+   - Kumulierte Summe aller Sparaktionen bis zu diesem Tag
+   - Y-Achse rechts: Totale CHF
+   - Zeigt den Gesamt-Fortschritt über die Zeit
+
+**Zeiträume (Tabs):**
+- **7 Tage**: Detaillierte Wochenansicht mit täglichen Werten
+- **30 Tage**: Monatsübersicht für mittelfristige Trends
+- **12 Monate**: Jahresansicht für langfristige Entwicklung

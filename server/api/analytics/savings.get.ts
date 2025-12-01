@@ -18,6 +18,10 @@ export default defineEventHandler(async (event) => {
     }
 
     const userId = payload.userId;
+    
+    // Get timeframe parameter (7days, 30days, 12months)
+    const query = getQuery(event);
+    const timeframe = (query.timeframe as string) || '30days';
 
     // Get savings by month (last 12 months)
     const monthsAgo = new Date();
@@ -81,7 +85,58 @@ export default defineEventHandler(async (event) => {
       .groupBy(sql`DAYOFWEEK(occurred_at), DAYNAME(occurred_at)`)
       .orderBy(sql`DAYOFWEEK(occurred_at)`);
 
-    // Get recent activity (last 30 days trend)
+    // Get time-series data based on timeframe
+    let timeSeriesData;
+    let startDate = new Date();
+    
+    if (timeframe === '7days') {
+      startDate.setDate(startDate.getDate() - 7);
+      timeSeriesData = await db
+        .select({
+          date: sql`DATE(occurred_at)`.as('date'),
+          totalAmount: sum(savings.amountChf),
+          count: count(savings.id)
+        })
+        .from(savings)
+        .where(and(
+          eq(savings.userId, userId),
+          gte(savings.occurredAt, startDate)
+        ))
+        .groupBy(sql`DATE(occurred_at)`)
+        .orderBy(sql`DATE(occurred_at)`);
+    } else if (timeframe === '30days') {
+      startDate.setDate(startDate.getDate() - 30);
+      timeSeriesData = await db
+        .select({
+          date: sql`DATE(occurred_at)`.as('date'),
+          totalAmount: sum(savings.amountChf),
+          count: count(savings.id)
+        })
+        .from(savings)
+        .where(and(
+          eq(savings.userId, userId),
+          gte(savings.occurredAt, startDate)
+        ))
+        .groupBy(sql`DATE(occurred_at)`)
+        .orderBy(sql`DATE(occurred_at)`);
+    } else if (timeframe === '12months') {
+      startDate.setMonth(startDate.getMonth() - 12);
+      timeSeriesData = await db
+        .select({
+          date: sql`DATE_FORMAT(occurred_at, '%Y-%m')`.as('date'),
+          totalAmount: sum(savings.amountChf),
+          count: count(savings.id)
+        })
+        .from(savings)
+        .where(and(
+          eq(savings.userId, userId),
+          gte(savings.occurredAt, startDate)
+        ))
+        .groupBy(sql`DATE_FORMAT(occurred_at, '%Y-%m')`)
+        .orderBy(sql`DATE_FORMAT(occurred_at, '%Y-%m')`);
+    }
+    
+    // Keep backward compatibility
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
@@ -154,7 +209,14 @@ export default defineEventHandler(async (event) => {
           date: day.date,
           amount: Number(day.totalAmount) || 0,
           count: Number(day.count) || 0
-        }))
+        })),
+        // New: Time series data for charts
+        timeSeries: (timeSeriesData || []).map(item => ({
+          date: item.date,
+          amount: Number(item.totalAmount) || 0,
+          count: Number(item.count) || 0
+        })),
+        timeframe: timeframe
       }
     };
 
