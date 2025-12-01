@@ -591,6 +591,19 @@ onMounted(async () => {
 .friend-card {
   padding: 16px;
   gap: 16px;
+  cursor: default;
+  pointer-events: auto;
+}
+
+.friend-card:hover {
+  background: white;
+  transform: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.friend-card:active {
+  background: white;
+  transform: none;
 }
 
 .friend-card .user-actions {
@@ -604,6 +617,11 @@ onMounted(async () => {
 .user-card:active {
   background: #E5E7EB;
   transform: scale(0.98);
+}
+
+.user-card.friend-card:active {
+  background: white;
+  transform: none;
 }
 
 .user-avatar {
