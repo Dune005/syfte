@@ -345,6 +345,15 @@
       </div>
     </div>
 
+    <!-- Achievement Popup -->
+    <AchievementPopup
+      :show="showAchievementPopup"
+      :achievement-name="currentAchievement.name"
+      :achievement-description="currentAchievement.description"
+      :achievement-image="currentAchievement.imageUrl"
+      @close="closeAchievementPopup"
+    />
+
     <!-- Streak Popup -->
     <StreakPopup
       :show="showStreakPopup"
@@ -410,6 +419,15 @@ const newGoal = ref({
   name: '',
   target: ''
 })
+
+// Achievement Popup State
+const showAchievementPopup = ref(false)
+const currentAchievement = ref({
+  name: '',
+  description: '',
+  imageUrl: ''
+})
+const achievementQueue = ref([])
 
 // Streak Popup State
 const showStreakPopup = ref(false)
@@ -599,13 +617,15 @@ const addActionToGoal = async (actionId, goalId) => {
       }
     }
 
-    // Check if new achievements were unlocked and update profile title
+    // Check if new achievements were unlocked
     if (response.achievements?.newlyUnlocked?.length > 0) {
+      // Queue achievements and show popups
+      await showAchievementPopups(response.achievements.newlyUnlocked)
       await updateProfileTitle()
+    } else {
+      // No achievements, show streak popup directly
+      await checkAndShowStreakPopup()
     }
-
-    // Check if streak popup should be shown
-    await checkAndShowStreakPopup()
   } catch (error) {
     console.error('Fehler beim Hinzufügen der Sparaktion:', error)
     alert('Fehler beim Hinzufügen der Sparaktion.')
@@ -657,6 +677,37 @@ const checkAndShowStreakPopup = async () => {
   } catch (error) {
     console.error('Fehler beim Prüfen des Streak-Popups:', error)
   }
+}
+
+// Show achievement popups (all achievements, then streak)
+const showAchievementPopups = async (achievements) => {
+  achievementQueue.value = [...achievements]
+  showNextAchievement()
+}
+
+// Show next achievement in queue
+const showNextAchievement = () => {
+  if (achievementQueue.value.length > 0) {
+    const achievement = achievementQueue.value.shift()
+    currentAchievement.value = {
+      name: achievement.name,
+      description: achievement.description,
+      imageUrl: achievement.imageUrl || '/images/auszeichnungen/default.png'
+    }
+    showAchievementPopup.value = true
+  } else {
+    // All achievements shown, now show streak popup
+    checkAndShowStreakPopup()
+  }
+}
+
+// Close achievement popup and show next or streak
+const closeAchievementPopup = () => {
+  showAchievementPopup.value = false
+  // Show next achievement after a short delay
+  setTimeout(() => {
+    showNextAchievement()
+  }, 300)
 }
 
 // Close streak popup
