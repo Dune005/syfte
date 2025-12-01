@@ -361,20 +361,21 @@
     <BottomNavigation 
       active-tab="dashboard" 
       @add-goal="showAddGoalModal = true"
-      @add-action="handleAddAction"
+      @action-created="handleActionCreated"
     />
     </template>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { Plus, CirclePlus, Check, CircleFadingPlus, Star, Trash2, Users } from 'lucide-vue-next'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { Plus, Check, CircleFadingPlus, Trash2 } from 'lucide-vue-next'
 import DeleteConfirmModal from '~/components/DeleteConfirmModal.vue'
 import BottomNavigation from '~/components/BottomNavigation.vue'
 
 const router = useRouter()
+const route = useRoute()
 
 // State
 const isLoading = ref(true)
@@ -418,11 +419,6 @@ const currentStreakData = ref({
 // Delete Modal State
 const showDeleteModal = ref(false)
 const goalToDelete = ref(null)
-
-// Navigation
-const navigateToFriends = () => {
-  router.push('/friends')
-}
 
 const goalImageInput = ref(null)
 const goalImageFile = ref(null)
@@ -923,10 +919,10 @@ const cancelDeleteGoal = () => {
   goalToDelete.value = null
 }
 
-// Handle add action from bottom nav
-const handleAddAction = () => {
-  // TODO: Implement add action modal/page
-  alert('Sparaktion erstellen - Funktion wird bald implementiert!')
+// Handle action created from BottomNavigation
+const handleActionCreated = async () => {
+  // Lade die Aktionen neu nach Erstellung einer neuen Aktion
+  await fetchActions()
 }
 
 const logout = async () => {
@@ -972,6 +968,13 @@ onMounted(async () => {
 
   } finally {
     isLoading.value = false
+    
+    // Prüfe Query-Parameter für automatisches Öffnen von Modals
+    if (route.query.action === 'new-goal') {
+      showAddGoalModal.value = true
+      // Entferne den Query-Parameter aus der URL
+      router.replace({ path: '/dashboard', query: {} })
+    }
   }
 })
 
