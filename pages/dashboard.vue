@@ -5,18 +5,46 @@
     
     <!-- Actual Dashboard Content -->
     <template v-else>
-    <!-- Header mit Profilbild und Tagesbetrag -->
+    <!-- Moderner Header mit Glassmorphism -->
     <div class="header">
+      <div class="header-background">
+        <!-- Decorative circles -->
+        <div class="header-decoration header-circle-1"></div>
+        <div class="header-decoration header-circle-2"></div>
+      </div>
+      
       <div class="header-content">
-        <div class="profile-image" @click="router.push('/profil')">
-          <img 
-            :src="currentUser?.profileImageUrl || '/images/syfte_Schaf/syfte_Schaf_happy.png'" 
-            alt="Profilbild" 
-          />
+        <!-- Top Row: Avatar + Greeting -->
+        <div class="header-top">
+          <div class="profile-avatar" @click="router.push('/profil')">
+            <img 
+              :src="currentUser?.profileImageUrl || '/images/syfte_Schaf/syfte_Schaf_happy.png'" 
+              alt="Profilbild" 
+            />
+          </div>
+          <div class="greeting-section">
+            <h2 class="greeting-text">{{ greeting }}, {{ firstName }}!</h2>
+            <p class="greeting-subtitle">{{ motivationalText }}</p>
+          </div>
         </div>
-        <div class="daily-savings">
-          <h2>Du hast heute schon</h2>
-          <h1>{{ todaySavings }} CHF gespart!</h1>
+        
+        <!-- Savings Card (Glassmorphism) -->
+        <div class="savings-card">
+          <div class="savings-main">
+            <span class="savings-label">Heute gespart</span>
+            <span class="savings-amount">{{ todaySavings }} CHF</span>
+          </div>
+          <div class="savings-divider"></div>
+          <div class="savings-meta">
+            <div class="streak-info" v-if="userStreak.current > 0">
+              <span class="streak-icon">🔥</span>
+              <span class="streak-text">{{ userStreak.current }} Tage Streak</span>
+            </div>
+            <div class="streak-info" v-else>
+              <span class="streak-icon">✨</span>
+              <span class="streak-text">Starte deine Streak!</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -368,7 +396,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Plus, Check, CircleFadingPlus, Trash2 } from 'lucide-vue-next'
 import DeleteConfirmModal from '~/components/DeleteConfirmModal.vue'
@@ -379,6 +407,34 @@ const route = useRoute()
 
 // State
 const isLoading = ref(true)
+
+// Computed: Tageszeit-basierte Begrüßung
+const greeting = computed(() => {
+  const hour = new Date().getHours()
+  
+  if (hour >= 5 && hour < 12) return 'Guten Morgen'
+  if (hour >= 12 && hour < 18) return 'Hallo'
+  if (hour >= 18 && hour < 22) return 'Guten Abend'
+  return 'Hallo Nachteule'
+})
+
+// Computed: Vorname des Nutzers
+const firstName = computed(() => {
+  return currentUser.value?.firstName || 'Sparfuchs'
+})
+
+// Computed: Motivierender Untertitel
+const motivationalText = computed(() => {
+  const streak = userStreak.value?.current || 0
+  const saved = todaySavings.value || 0
+  
+  if (streak >= 30) return 'Unglaublich! Du bist ein Spar-Champion! 🏆'
+  if (streak >= 14) return 'Wow, was für eine Serie! 🔥'
+  if (streak >= 7) return 'Super! Du bist auf Feuer! 🔥'
+  if (saved > 0) return 'Du machst das super!'
+  if (streak > 0) return 'Weiter so, du schaffst das!'
+  return 'Zeit für deinen ersten Sparmoment!'
+})
 const todaySavings = ref(20)
 const showAddGoalModal = ref(false)
 const actions = ref([])
@@ -987,66 +1043,195 @@ onBeforeUnmount(() => {
 <style scoped>
 .dashboard {
   min-height: 100vh;
+  min-height: 100dvh; /* Dynamic viewport height für mobile */
   background: white;
   font-family: 'Urbanist', sans-serif;
   padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  /* Kein Padding/Margin oben, links, rechts */
+  margin: 0;
+  padding-top: 0;
+  padding-left: 0;
+  padding-right: 0;
 }
 
-/* Header */
+/* Header - randabfallend */
 .header {
-  background: linear-gradient(135deg, #35C2C1 0%, #2BA39E 100%);
-  padding: 20px;
-  border-radius: 0 0 50px 50px;
-  color: white;
   position: relative;
+  background: linear-gradient(135deg, #35C2C1 0%, #2BA39E 100%);
+  padding: 0;
+  padding-top: env(safe-area-inset-top, 0px);
+  border-radius: 0 0 30px 30px;
   overflow: hidden;
+  min-height: 220px;
+  /* Randabfallend: volle Breite */
+  margin-left: 0;
+  margin-right: 0;
+  margin-top: 0;
+  width: 100%;
 }
 
-.header::before {
-  content: '';
+.header-background {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.1);
-  border-radius: 0 0 50px 50px;
+  overflow: hidden;
+}
+
+.header-decoration {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.header-circle-1 {
+  width: 200px;
+  height: 200px;
+  top: -60px;
+  right: -40px;
+}
+
+.header-circle-2 {
+  width: 120px;
+  height: 120px;
+  bottom: -30px;
+  left: -30px;
 }
 
 .header-content {
-  display: flex;
-  align-items: center;
-  gap: 20px;
   position: relative;
   z-index: 1;
+  padding: 20px 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-.profile-image {
+/* Header Top Row */
+.header-top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.profile-avatar {
   width: 60px;
   height: 60px;
   border-radius: 50%;
   overflow: hidden;
-  border: 3px solid rgba(255, 255, 255, 0.3);
+  border: 3px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
-.profile-image img {
+.profile-avatar:hover {
+  transform: scale(1.05);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.profile-avatar:active {
+  transform: scale(0.98);
+}
+
+.profile-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.daily-savings h2 {
-  font-size: 24px;
+.greeting-section {
+  flex: 1;
+  color: white;
+}
+
+.greeting-text {
+  font-size: 22px;
   font-weight: 700;
-  margin: 0 0 8px 0;
+  margin: 0 0 4px 0;
   line-height: 1.2;
 }
 
-.daily-savings h1 {
-  font-size: 32px;
-  font-weight: 900;
+.greeting-subtitle {
+  font-size: 14px;
+  font-weight: 500;
   margin: 0;
-  line-height: 1.2;
+  opacity: 0.9;
+  line-height: 1.3;
+}
+
+/* Savings Card - Glassmorphism */
+.savings-card {
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 20px;
+  padding: 20px 24px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  contain: layout style paint;
+}
+
+/* Fallback für Browser ohne backdrop-filter */
+@supports not (backdrop-filter: blur(12px)) {
+  .savings-card {
+    background: rgba(255, 255, 255, 0.85);
+  }
+}
+
+.savings-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.savings-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.savings-amount {
+  font-size: 36px;
+  font-weight: 800;
+  color: white;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  line-height: 1.1;
+}
+
+.savings-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.2);
+  margin: 16px 0;
+}
+
+.savings-meta {
+  display: flex;
+  justify-content: center;
+}
+
+.streak-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 8px 16px;
+  border-radius: 20px;
+}
+
+.streak-icon {
+  font-size: 16px;
+}
+
+.streak-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
 }
 
 /* Actions Section */
@@ -1734,30 +1919,55 @@ onBeforeUnmount(() => {
   color: #35C2C1;
 }
 
-/* Profile Image Cursor */
-.profile-image {
-  cursor: pointer;
-  transition: transform 0.2s ease;
-}
-
-.profile-image:hover {
-  transform: scale(1.05);
-}
+/* Profile Image Cursor - entfernt, wird jetzt durch .profile-avatar ersetzt */
 
 /* Responsive */
 @media (max-width: 480px) {
+  .header {
+    min-height: 200px;
+  }
+  
   .header-content {
-    flex-direction: column;
-    text-align: center;
+    padding: 16px 16px 20px;
     gap: 16px;
   }
   
-  .daily-savings h2 {
-    font-size: 20px;
+  .profile-avatar {
+    width: 52px;
+    height: 52px;
   }
   
-  .daily-savings h1 {
-    font-size: 28px;
+  .greeting-text {
+    font-size: 18px;
+  }
+  
+  .greeting-subtitle {
+    font-size: 13px;
+  }
+  
+  .savings-card {
+    padding: 16px 20px;
+    border-radius: 16px;
+  }
+  
+  .savings-amount {
+    font-size: 30px;
+  }
+  
+  .savings-label {
+    font-size: 12px;
+  }
+  
+  .savings-divider {
+    margin: 12px 0;
+  }
+  
+  .streak-info {
+    padding: 6px 12px;
+  }
+  
+  .streak-text {
+    font-size: 13px;
   }
   
   .goal-card {
@@ -1807,6 +2017,39 @@ onBeforeUnmount(() => {
 
   .goal-modal-preview {
     height: 160px;
+  }
+}
+
+/* Extra kleine Geräte (< 360px) */
+@media (max-width: 360px) {
+  .header-content {
+    padding: 14px 14px 18px;
+  }
+  
+  .profile-avatar {
+    width: 48px;
+    height: 48px;
+  }
+  
+  .greeting-text {
+    font-size: 16px;
+  }
+  
+  .savings-amount {
+    font-size: 26px;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .profile-avatar,
+  .savings-card,
+  .action-card {
+    transition: none;
+  }
+  
+  .action-card.success {
+    animation: none;
   }
 }
 </style>
