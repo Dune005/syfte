@@ -192,6 +192,9 @@
       :week-data="currentStreakData.weekData"
       @close="closeStreakPopup"
     />
+
+    <!-- Bottom Navigation -->
+    <BottomNavigation active-tab="" />
   </div>
 </template>
 
@@ -199,6 +202,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ChevronLeft, Plus, Check, CircleFadingPlus, Trash2, SquarePlus } from 'lucide-vue-next'
+import BottomNavigation from '~/components/BottomNavigation.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -428,6 +432,7 @@ onMounted(() => {
   background: white;
   font-family: 'Urbanist', sans-serif;
   padding: 20px;
+  padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
 }
 
 /* Back Button */

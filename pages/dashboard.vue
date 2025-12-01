@@ -8,7 +8,7 @@
     <!-- Header mit Profilbild und Tagesbetrag -->
     <div class="header">
       <div class="header-content">
-        <div class="profile-image" @click="showProfileModal = true">
+        <div class="profile-image" @click="router.push('/profil')">
           <img 
             :src="currentUser?.profileImageUrl || '/images/syfte_Schaf/syfte_Schaf_happy.png'" 
             alt="Profilbild" 
@@ -129,19 +129,6 @@
         </div>
       </div>
 
-      <!-- Plus Button für neues Sparziel -->
-      <div class="add-goal-button" @click="showAddGoalModal = true">
-        <div class="add-circle">
-          <Plus :size="32" color="white" />
-        </div>
-      </div>
-      
-      <!-- Friends Button -->
-      <div class="friends-button" @click="navigateToFriends">
-        <div class="friends-circle">
-          <Users :size="28" color="white" />
-        </div>
-      </div>
     </div>
 
     <!-- Keine Sparziele Hinweis -->
@@ -236,115 +223,6 @@
       </div>
     </div>
 
-    <!-- Profil Modal -->
-    <div v-if="showProfileModal" class="modal-overlay" @click="showProfileModal = false">
-      <div class="profile-modal" @click.stop>
-        <!-- Header Balken -->
-        <div class="profile-header">
-          <div class="profile-header-bg"></div>
-        </div>
-
-        <!-- Profil Info -->
-        <div class="profile-info">
-          <div class="profile-avatar">
-            <div class="avatar-wrapper">
-              <img
-                class="avatar-img"
-                :src="profileImagePreview || currentUser?.profileImageUrl || '/images/syfte_Schaf/syfte_Schaf_happy.png'"
-                alt="Profilbild"
-              />
-              <button type="button" class="edit-overlay" @click="triggerProfileImageSelect" aria-label="Profilbild bearbeiten">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                  <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z" fill="#fff"/>
-                </svg>
-              </button>
-
-              <!-- hidden file input for avatar selection (kept here so clicking overlay opens it) -->
-              <input
-                ref="profileImageInput"
-                type="file"
-                accept="image/jpeg,image/jpg,image/png,image/webp"
-                class="sr-only"
-                @change="handleProfileImageChange"
-              />
-            </div>
-          </div>
-          <div class="profile-details">
-            <p class="profile-title">{{ userProfile.title || 'Spar-Lahm' }}</p>
-
-            <div class="profile-name-row">
-              <div class="name-field">
-                <span class="name-text">{{ currentUser?.firstName || '' }} {{ currentUser?.lastName || '' }}</span>
-              </div>
-            </div>
-
-            <p v-if="profileError" class="profile-error">{{ profileError }}</p>
-            <p v-if="profileSuccess" class="profile-success">{{ profileSuccess }}</p>
-          </div>
-        </div>
-
-        <!-- Statistik Cards -->
-        <div v-if="userStats" class="stats-grid">
-          <div class="stat-card">
-            <h4>Total gespart</h4>
-            <p>CHF {{ userStats.allTime.amount }}</p>
-          </div>
-          <div class="stat-card">
-            <h4>Alle Sparziele</h4>
-            <p>CHF {{ totalGoals.targetChf }}</p>
-          </div>
-          <div class="stat-card">
-            <h4>Streak</h4>
-            <p>{{ userStreak.current || 0 }} Tage</p>
-          </div>
-        </div>
-        
-        <div v-else class="stats-loading">
-          <p>Lade Statistiken...</p>
-        </div>
-
-        <!-- Auszeichnungen -->
-        <div class="achievements-section">
-          <h2>Deine Auszeichnungen</h2>
-          <div v-if="userProfile.achievements.length === 0" class="no-achievements">
-            <p>Du hast noch keine Auszeichnungen freigeschaltet.</p>
-            <p class="no-achievements-hint">Spare fleissig weiter, um deine ersten Erfolge zu erreichen!</p>
-          </div>
-          <div v-else class="achievements-grid">
-            <div
-              v-for="achievement in userProfile.achievements"
-              :key="achievement.id"
-              class="achievement-card"
-              :class="{ 'unlocked': achievement.unlocked }"
-            >
-              <div class="achievement-icon">
-                <img :src="achievement.imageUrl" :alt="achievement.name" />
-              </div>
-              <div class="achievement-info">
-                <h4>{{ achievement.name }}</h4>
-                <p>{{ achievement.description }}</p>
-              </div>
-              <div v-if="achievement.unlocked" class="achievement-check">
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                  <circle cx="9" cy="9" r="9" fill="#64C661"/>
-                  <path d="M5 9l3 3 5-6" stroke="white" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Buttons -->
-        <div class="profile-buttons">
-          <ButtonSecondary @click="showProfileModal = false">Abbrechen</ButtonSecondary>
-          <ButtonPrimary @click="saveProfile" :disabled="isSavingProfile">
-            {{ isSavingProfile ? 'Speichern...' : 'Speichern' }}
-          </ButtonPrimary>
-          <ButtonPrimary @click="logout">Logout</ButtonPrimary>
-        </div>
-      </div>
-    </div>
-
     <!-- Streak Popup -->
     <StreakPopup
       :show="showStreakPopup"
@@ -360,6 +238,13 @@
       @confirm="confirmDeleteGoal"
       @cancel="cancelDeleteGoal"
     />
+
+    <!-- Bottom Navigation -->
+    <BottomNavigation 
+      active-tab="dashboard" 
+      @add-goal="showAddGoalModal = true"
+      @add-action="handleAddAction"
+    />
     </template>
   </div>
 </template>
@@ -369,6 +254,7 @@ import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Plus, CirclePlus, Check, CircleFadingPlus, Star, Trash2, Users } from 'lucide-vue-next'
 import DeleteConfirmModal from '~/components/DeleteConfirmModal.vue'
+import BottomNavigation from '~/components/BottomNavigation.vue'
 
 const router = useRouter()
 
@@ -376,29 +262,13 @@ const router = useRouter()
 const isLoading = ref(true)
 const todaySavings = ref(20)
 const showAddGoalModal = ref(false)
-const showProfileModal = ref(false)
 const actions = ref([])
 const selectedAction = ref(null)
 const executingAction = ref(null)
 const successActions = ref([])
 
-const userProfile = ref({
-  name: 'Aaron Täschler',
-  title: 'Herdenführer',
-  achievements: []
-})
-
 // Full user object from dashboard / API
 const currentUser = ref(null)
-
-// Profile edit state
-const editProfileImageUrl = ref('')
-const profileImageInput = ref(null)
-const profileImageFile = ref(null)
-const profileImagePreview = ref('')
-const profileError = ref('')
-const profileSuccess = ref('')
-const isSavingProfile = ref(false)
 
 const userStats = ref(null)
 const userStreak = ref({ current: 0, longest: 0 })
@@ -599,11 +469,6 @@ const addActionToGoal = async (actionId, goalId) => {
       }
     }
 
-    // Check if new achievements were unlocked and update profile title
-    if (response.achievements?.newlyUnlocked?.length > 0) {
-      await updateProfileTitle()
-    }
-
     // Check if streak popup should be shown
     await checkAndShowStreakPopup()
   } catch (error) {
@@ -611,25 +476,6 @@ const addActionToGoal = async (actionId, goalId) => {
     alert('Fehler beim Hinzufügen der Sparaktion.')
   } finally {
     executingAction.value = null
-  }
-}
-
-// Update profile title with latest achievement
-const updateProfileTitle = async () => {
-  try {
-    const meResponse = await $fetch('/api/auth/me')
-    if (meResponse?.profile?.title) {
-      userProfile.value.title = meResponse.profile.title
-    }
-    // Also update achievements list
-    if (meResponse?.profile?.achievements) {
-      userProfile.value.achievements = meResponse.profile.achievements.map(achievement => ({
-        ...achievement,
-        unlocked: true
-      }))
-    }
-  } catch (error) {
-    console.error('Fehler beim Aktualisieren des Profil-Titels:', error)
   }
 }
 
@@ -912,6 +758,12 @@ const cancelDeleteGoal = () => {
   goalToDelete.value = null
 }
 
+// Handle add action from bottom nav
+const handleAddAction = () => {
+  // TODO: Implement add action modal/page
+  alert('Sparaktion erstellen - Funktion wird bald implementiert!')
+}
+
 const logout = async () => {
   try {
     await $fetch('/api/auth/logout', {
@@ -939,14 +791,7 @@ onMounted(async () => {
     try {
       const dashboardResponse = await $fetch('/api/dashboard')
       if (dashboardResponse?.dashboard?.user) {
-        const user = dashboardResponse.dashboard.user
-        currentUser.value = user
-        userProfile.value.name = `${user.firstName} ${user.lastName}`
-        // populate profile image if available
-        if (user.profileImageUrl) {
-          editProfileImageUrl.value = user.profileImageUrl
-          profileImagePreview.value = user.profileImageUrl
-        }
+        currentUser.value = dashboardResponse.dashboard.user
       }
     } catch (error) {
       console.error('Fehler beim Laden der Benutzerdaten:', error)
@@ -960,24 +805,6 @@ onMounted(async () => {
       console.error('Fehler beim Laden der Sparstatistiken:', error)
     }
 
-    try {
-      // Load user profile data with achievements
-      const meResponse = await $fetch('/api/auth/me')
-      
-      // Set latest achievement as title
-      if (meResponse?.profile?.title) {
-        userProfile.value.title = meResponse.profile.title
-      }
-      
-      // Load achievements
-      userProfile.value.achievements = (meResponse?.profile?.achievements || []).map(achievement => ({
-        ...achievement,
-        unlocked: true
-      }))
-    } catch (error) {
-      console.error('Fehler beim Laden der Profildaten:', error)
-      userProfile.value.achievements = []
-    }
   } finally {
     isLoading.value = false
   }
@@ -985,120 +812,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   clearGoalImage()
-  // revoke profile preview blob if any
-  if (profileImagePreview.value && profileImageFile.value) {
-    try { URL.revokeObjectURL(profileImagePreview.value) } catch (e) {}
-  }
 })
-
-// When opening the profile modal, ensure edit fields reflect the current user
-watch(showProfileModal, (val) => {
-  if (val) {
-    profileError.value = ''
-    profileSuccess.value = ''
-    if (currentUser.value) {
-      editProfileImageUrl.value = currentUser.value.profileImageUrl || ''
-      profileImagePreview.value = currentUser.value.profileImageUrl || ''
-      profileImageFile.value = null
-    }
-  }
-})
-
-const triggerProfileImageSelect = () => {
-  profileImageInput.value?.click()
-}
-
-const clearProfileImage = () => {
-  if (profileImagePreview.value && profileImageFile.value) {
-    try { URL.revokeObjectURL(profileImagePreview.value) } catch (e) {}
-  }
-  profileImagePreview.value = ''
-  profileImageFile.value = null
-  editProfileImageUrl.value = ''
-}
-
-const processProfileImageFile = (file) => {
-  if (!file) return
-
-  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-    profileError.value = 'Bitte wähle ein JPG, PNG oder WebP Bild.'
-    return
-  }
-
-  if (file.size > MAX_IMAGE_SIZE) {
-    profileError.value = 'Das Bild darf maximal 5 MB groß sein.'
-    return
-  }
-
-  profileError.value = ''
-
-  if (profileImagePreview.value && profileImageFile.value) {
-    URL.revokeObjectURL(profileImagePreview.value)
-  }
-
-  profileImageFile.value = file
-  profileImagePreview.value = URL.createObjectURL(file)
-}
-
-const handleProfileImageChange = (event) => {
-  const [file] = event.target.files || []
-  if (file) {
-    processProfileImageFile(file)
-  }
-}
-
-const saveProfile = async ({ closeOnSuccess = true } = {}) => {
-  if (isSavingProfile.value) return
-
-  profileError.value = ''
-  profileSuccess.value = ''
-
-  isSavingProfile.value = true
-
-  try {
-  let imageUrl = editProfileImageUrl.value || null
-
-    if (profileImageFile.value) {
-      // upload image first
-      const formData = new FormData()
-      formData.append('file', profileImageFile.value)
-      formData.append('type', 'profile')
-
-      const uploadResponse = await $fetch('/api/upload/image', {
-        method: 'POST',
-        body: formData
-      })
-
-      imageUrl = uploadResponse.imageUrl || null
-    }
-
-    const response = await $fetch('/api/profile/update', {
-      method: 'PUT',
-      body: {
-        profileImageUrl: imageUrl
-      }
-    })
-
-    if (response?.success) {
-      profileSuccess.value = response.message || 'Profilbild erfolgreich aktualisiert.'
-      // update local user state
-      currentUser.value = response.user
-      profileImagePreview.value = response.user.profileImageUrl || ''
-      // close modal after short delay if requested
-      if (closeOnSuccess) {
-        setTimeout(() => { showProfileModal.value = false }, 600)
-      }
-    } else {
-      profileError.value = response?.message || 'Profilbild konnte nicht aktualisiert werden.'
-    }
-  } catch (error) {
-    console.error('Fehler beim Speichern des Profils:', error)
-    profileError.value = getErrorMessage(error, 'Fehler beim Aktualisieren des Profilbilds.')
-  } finally {
-    isSavingProfile.value = false
-  }
-}
-
 
 </script>
 
@@ -1107,6 +821,7 @@ const saveProfile = async ({ closeOnSuccess = true } = {}) => {
   min-height: 100vh;
   background: white;
   font-family: 'Urbanist', sans-serif;
+  padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
 }
 
 /* Header */
@@ -1404,7 +1119,7 @@ const saveProfile = async ({ closeOnSuccess = true } = {}) => {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  margin-bottom: 80px;
+  margin-bottom: 20px;
 }
 
 .goal-card {
@@ -1576,89 +1291,7 @@ const saveProfile = async ({ closeOnSuccess = true } = {}) => {
   transform: scale(0.95);
 }
 
-/* Add Goal Button */
-.add-goal-button {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 100;
-}
-
-.add-goal-button:hover {
-  transform: scale(1.1) rotate(90deg);
-}
-
-.add-goal-button:active {
-  transform: scale(0.95) rotate(90deg);
-}
-
-/* Friends Button */
-.friends-button {
-  position: fixed;
-  bottom: 24px;
-  left: 24px;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 100;
-}
-
-.friends-button:hover {
-  transform: scale(1.1);
-}
-
-.friends-button:active {
-  transform: scale(0.95);
-}
-
-.friends-circle {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #35C2C1 0%, #2BA39E 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(53, 194, 193, 0.3);
-  position: relative;
-  overflow: hidden;
-}
-
-.friends-circle::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 255, 255, 0.2);
-  transform: translateX(-100%);
-  transition: transform 0.6s ease;
-}
-
-.friends-button:hover .friends-circle::before {
-  transform: translateX(0);
-}
-
-.friends-circle::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.3);
-  transform: translate(-50%, -50%);
-  transition: width 0.6s ease, height 0.6s ease;
-}
-
-.friends-button:active .friends-circle::after {
-  width: 100px;
-  height: 100px;
-}
-
+/* Add Circle - used in no-goals-section */
 .add-circle {
   width: 56px;
   height: 56px;
@@ -1670,40 +1303,6 @@ const saveProfile = async ({ closeOnSuccess = true } = {}) => {
   box-shadow: 0 4px 12px rgba(53, 194, 193, 0.3);
   position: relative;
   overflow: hidden;
-}
-
-.add-circle::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 255, 255, 0.2);
-  transform: translateX(-100%);
-  transition: transform 0.6s ease;
-}
-
-.add-goal-button:hover .add-circle::before {
-  transform: translateX(0);
-}
-
-.add-circle::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.3);
-  transform: translate(-50%, -50%);
-  transition: width 0.6s ease, height 0.6s ease;
-}
-
-.add-goal-button:active .add-circle::after {
-  width: 100px;
-  height: 100px;
 }
 
 /* Modal */
@@ -1967,235 +1566,6 @@ const saveProfile = async ({ closeOnSuccess = true } = {}) => {
   color: #35C2C1;
 }
 
-/* Profile Modal */
-.profile-modal {
-  background: white;
-  border-radius: 16px;
-  width: 100%;
-  max-width: 400px;
-  max-height: 90vh;
-  overflow-y: auto;
-  position: relative;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  animation: modalSlideIn 0.3s ease-out;
-}
-
-.profile-header {
-  position: relative;
-  height: 120px;
-  overflow: hidden;
-  border-radius: 16px 16px 0 0;
-}
-
-.profile-header-bg {
-  position: absolute;
-  top: -46px;
-  left: -19px;
-  width: 430px;
-  height: 254px;
-  background: linear-gradient(135deg, #35C2C1 0%, #2BA39E 100%);
-  border-radius: 0 0 50px 50px;
-}
-
-
-.profile-info {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 16px;
-  margin-top: -60px;
-  position: relative;
-  z-index: 1;
-}
-
-.profile-avatar {
-  margin-bottom: 16px;
-}
-
-.profile-details {
-  text-align: center;
-}
-
-.profile-details h3 {
-  font-family: 'Urbanist', sans-serif;
-  font-weight: 900;
-  font-size: 22px;
-  color: #1E232C;
-  margin: 0 0 4px 0;
-}
-
-.profile-details p {
-  font-family: 'Urbanist', sans-serif;
-  font-weight: 400;
-  font-size: 16px;
-  color: #666;
-  margin: 0;
-}
-
-.profile-name-row {
-  display: flex;
-  justify-content: center;
-  margin-top: 8px;
-}
-
-.name-field {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.name-text {
-  font-family: 'Urbanist', sans-serif;
-  font-weight: 600;
-  font-size: 18px;
-  color: #1E232C;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  padding: 16px;
-}
-
-.stats-loading {
-  padding: 16px;
-  text-align: center;
-  color: #666;
-}
-
-.stat-card {
-  background: #F0F2F5;
-  border-radius: 12px;
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.stat-card h4 {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  font-weight: 500;
-  font-size: 16px;
-  color: #121417;
-  margin: 0;
-}
-
-.stat-card p {
-  font-family: 'Urbanist', sans-serif;
-  font-weight: 700;
-  font-size: 24px;
-  color: #121417;
-  margin: 0;
-}
-
-.achievements-section {
-  padding: 16px;
-}
-
-.achievements-section h2 {
-  font-family: 'Urbanist', sans-serif;
-  font-weight: 900;
-  font-size: 30px;
-  color: #1E232C;
-  margin: 0 0 16px 0;
-}
-
-.no-achievements {
-  text-align: center;
-  padding: 32px 16px;
-  background: #F0F2F5;
-  border-radius: 12px;
-}
-
-.no-achievements p {
-  font-family: 'Urbanist', sans-serif;
-  font-size: 16px;
-  color: #666;
-  margin: 0 0 8px 0;
-}
-
-.no-achievements-hint {
-  font-size: 14px;
-  color: #999;
-}
-
-.achievements-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.achievement-card {
-  background: white;
-  border: 1px solid #A0A0A0;
-  border-radius: 12px;
-  padding: 16px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  position: relative;
-  opacity: 0.5;
-  transition: opacity 0.3s ease;
-}
-
-.achievement-card.unlocked {
-  opacity: 1;
-  border-color: #64C661;
-}
-
-.achievement-icon {
-  width: 70px;
-  height: 70px;
-  border-radius: 70.5px;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.achievement-icon img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.achievement-info {
-  flex: 1;
-}
-
-.achievement-info h4 {
-  font-family: 'Urbanist', sans-serif;
-  font-weight: 500;
-  font-size: 16px;
-  color: #121417;
-  margin: 0 0 4px 0;
-}
-
-.achievement-info p {
-  font-family: 'Urbanist', sans-serif;
-  font-weight: 400;
-  font-size: 14px;
-  color: #666;
-  margin: 0;
-  line-height: 1.4;
-}
-
-.achievement-check {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-}
-
-.profile-buttons {
-  display: flex;
-  gap: 12px;
-  padding: 16px;
-  border-top: 1px solid #e0e0e0;
-}
-
-.profile-buttons button {
-  flex: 1;
-}
-
 /* Profile Image Cursor */
 .profile-image {
   cursor: pointer;
@@ -2204,47 +1574,6 @@ const saveProfile = async ({ closeOnSuccess = true } = {}) => {
 
 .profile-image:hover {
   transform: scale(1.05);
-}
-
-/* Avatar wrapper inside profile modal */
-.avatar-wrapper {
-  position: relative;
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 4px solid white;
-  box-shadow: 0 8px 14px -2px rgba(0, 0, 0, 0.25);
-}
-
-.avatar-wrapper .avatar-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.avatar-wrapper .edit-overlay {
-  position: absolute;
-  right: 6px;
-  bottom: 6px;
-  background: rgba(0,0,0,0.6);
-  border: none;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transform: translateY(4px);
-  transition: opacity 0.18s ease, transform 0.18s ease;
-  cursor: pointer;
-}
-
-.avatar-wrapper:hover .edit-overlay {
-  opacity: 1;
-  transform: translateY(0);
 }
 
 /* Responsive */

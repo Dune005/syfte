@@ -197,6 +197,9 @@
       @confirm="confirmRemoveFriend"
       @cancel="cancelRemoveFriend"
     />
+
+    <!-- Bottom Navigation -->
+    <BottomNavigation active-tab="friends" />
   </div>
 </template>
 
@@ -215,6 +218,7 @@ import {
   Flame
 } from 'lucide-vue-next'
 import DeleteConfirmModal from '~/components/DeleteConfirmModal.vue'
+import BottomNavigation from '~/components/BottomNavigation.vue'
 
 const router = useRouter()
 
