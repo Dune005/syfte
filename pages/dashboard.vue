@@ -223,6 +223,124 @@
       </div>
     </div>
 
+    <!-- Profil Modal -->
+    <div v-if="showProfileModal" class="modal-overlay" @click="showProfileModal = false">
+      <div class="profile-modal" @click.stop>
+        <!-- Header Balken -->
+        <div class="profile-header">
+          <div class="profile-header-bg"></div>
+        </div>
+
+        <!-- Profil Info -->
+        <div class="profile-info">
+          <div class="profile-avatar">
+            <div class="avatar-wrapper">
+              <img
+                class="avatar-img"
+                :src="profileImagePreview || currentUser?.profileImageUrl || '/images/syfte_Schaf/syfte_Schaf_happy.png'"
+                alt="Profilbild"
+              />
+              <button type="button" class="edit-overlay" @click="triggerProfileImageSelect" aria-label="Profilbild bearbeiten">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z" fill="#fff"/>
+                </svg>
+              </button>
+
+              <!-- hidden file input for avatar selection (kept here so clicking overlay opens it) -->
+              <input
+                ref="profileImageInput"
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+                class="sr-only"
+                @change="handleProfileImageChange"
+              />
+            </div>
+          </div>
+          <div class="profile-details">
+            <p class="profile-title">{{ userProfile.title || 'Spar-Lahm' }}</p>
+
+            <div class="profile-name-row">
+              <div class="name-field">
+                <span class="name-text">{{ currentUser?.firstName || '' }} {{ currentUser?.lastName || '' }}</span>
+              </div>
+            </div>
+
+            <p v-if="profileError" class="profile-error">{{ profileError }}</p>
+            <p v-if="profileSuccess" class="profile-success">{{ profileSuccess }}</p>
+          </div>
+        </div>
+
+        <!-- Statistik Cards -->
+        <div v-if="userStats" class="stats-grid">
+          <div class="stat-card">
+            <h4>Total gespart</h4>
+            <p>CHF {{ userStats.allTime.amount }}</p>
+          </div>
+          <div class="stat-card">
+            <h4>Alle Sparziele</h4>
+            <p>CHF {{ totalGoals.targetChf }}</p>
+          </div>
+          <div class="stat-card">
+            <h4>Streak</h4>
+            <p>{{ userStreak.current || 0 }} Tage</p>
+          </div>
+        </div>
+        
+        <div v-else class="stats-loading">
+          <p>Lade Statistiken...</p>
+        </div>
+
+        <!-- Auszeichnungen -->
+        <div class="achievements-section">
+          <h2>Deine Auszeichnungen</h2>
+          <div v-if="userProfile.achievements.length === 0" class="no-achievements">
+            <p>Du hast noch keine Auszeichnungen freigeschaltet.</p>
+            <p class="no-achievements-hint">Spare fleissig weiter, um deine ersten Erfolge zu erreichen!</p>
+          </div>
+          <div v-else class="achievements-grid">
+            <div
+              v-for="achievement in userProfile.achievements"
+              :key="achievement.id"
+              class="achievement-card"
+              :class="{ 'unlocked': achievement.unlocked }"
+            >
+              <div class="achievement-icon">
+                <img :src="achievement.imageUrl" :alt="achievement.name" />
+              </div>
+              <div class="achievement-info">
+                <h4>{{ achievement.name }}</h4>
+                <p>{{ achievement.description }}</p>
+              </div>
+              <div v-if="achievement.unlocked" class="achievement-check">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <circle cx="9" cy="9" r="9" fill="#64C661"/>
+                  <path d="M5 9l3 3 5-6" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="profile-buttons">
+          <ButtonSecondary @click="showProfileModal = false">Abbrechen</ButtonSecondary>
+          <ButtonPrimary @click="saveProfile" :disabled="isSavingProfile">
+            {{ isSavingProfile ? 'Speichern...' : 'Speichern' }}
+          </ButtonPrimary>
+          <ButtonPrimary @click="logout">Logout</ButtonPrimary>
+        </div>
+      </div>
+    </div>
+
+    <!-- Achievement Popup -->
+    <AchievementPopup
+      :show="showAchievementPopup"
+      :achievement-name="currentAchievement.name"
+      :achievement-description="currentAchievement.description"
+      :achievement-image="currentAchievement.imageUrl"
+      @close="closeAchievementPopup"
+    />
+
     <!-- Streak Popup -->
     <StreakPopup
       :show="showStreakPopup"
@@ -280,6 +398,15 @@ const newGoal = ref({
   name: '',
   target: ''
 })
+
+// Achievement Popup State
+const showAchievementPopup = ref(false)
+const currentAchievement = ref({
+  name: '',
+  description: '',
+  imageUrl: ''
+})
+const achievementQueue = ref([])
 
 // Streak Popup State
 const showStreakPopup = ref(false)
@@ -469,8 +596,15 @@ const addActionToGoal = async (actionId, goalId) => {
       }
     }
 
-    // Check if streak popup should be shown
-    await checkAndShowStreakPopup()
+    // Check if new achievements were unlocked
+    if (response.achievements?.newlyUnlocked?.length > 0) {
+      // Queue achievements and show popups
+      await showAchievementPopups(response.achievements.newlyUnlocked)
+      await updateProfileTitle()
+    } else {
+      // No achievements, show streak popup directly
+      await checkAndShowStreakPopup()
+    }
   } catch (error) {
     console.error('Fehler beim Hinzufügen der Sparaktion:', error)
     alert('Fehler beim Hinzufügen der Sparaktion.')
@@ -503,6 +637,37 @@ const checkAndShowStreakPopup = async () => {
   } catch (error) {
     console.error('Fehler beim Prüfen des Streak-Popups:', error)
   }
+}
+
+// Show achievement popups (all achievements, then streak)
+const showAchievementPopups = async (achievements) => {
+  achievementQueue.value = [...achievements]
+  showNextAchievement()
+}
+
+// Show next achievement in queue
+const showNextAchievement = () => {
+  if (achievementQueue.value.length > 0) {
+    const achievement = achievementQueue.value.shift()
+    currentAchievement.value = {
+      name: achievement.name,
+      description: achievement.description,
+      imageUrl: achievement.imageUrl || '/images/auszeichnungen/default.png'
+    }
+    showAchievementPopup.value = true
+  } else {
+    // All achievements shown, now show streak popup
+    checkAndShowStreakPopup()
+  }
+}
+
+// Close achievement popup and show next or streak
+const closeAchievementPopup = () => {
+  showAchievementPopup.value = false
+  // Show next achievement after a short delay
+  setTimeout(() => {
+    showNextAchievement()
+  }, 300)
 }
 
 // Close streak popup
