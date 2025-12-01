@@ -4,11 +4,7 @@
     <div class="profile-header">
       <div class="profile-header-bg"></div>
       <div class="header-content">
-        <button class="back-button" @click="goBack">
-          <ChevronLeft :size="24" color="white" />
-        </button>
         <h1>Mein Profil</h1>
-        <div class="header-spacer"></div>
       </div>
     </div>
 
@@ -154,7 +150,6 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { 
-  ChevronLeft, 
   Camera, 
   PiggyBank, 
   Target, 
@@ -198,10 +193,6 @@ const hasChanges = computed(() => {
 })
 
 // Methods
-const goBack = () => {
-  router.back()
-}
-
 const normalizeAmount = (value) => {
   if (typeof value === 'number') return value
   if (typeof value === 'string') {
@@ -417,26 +408,9 @@ onBeforeUnmount(() => {
   z-index: 1;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   padding: 16px 20px;
   padding-top: calc(16px + env(safe-area-inset-top, 0px));
-}
-
-.back-button {
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.back-button:hover {
-  background: rgba(255, 255, 255, 0.3);
 }
 
 .header-content h1 {
@@ -444,10 +418,6 @@ onBeforeUnmount(() => {
   font-weight: 700;
   color: white;
   margin: 0;
-}
-
-.header-spacer {
-  width: 40px;
 }
 
 /* Loading State */

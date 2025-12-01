@@ -3,9 +3,6 @@
     <!-- Header -->
     <div class="header">
       <div class="header-content">
-        <div class="back-button" @click="goBack">
-          <ArrowLeft :size="24" color="white" />
-        </div>
         <h1>Freunde</h1>
       </div>
     </div>
@@ -207,7 +204,6 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { 
-  ArrowLeft, 
   Search, 
   UserPlus, 
   Check, 
@@ -244,10 +240,6 @@ const friendToRemove = ref(null)
 let searchTimeout = null
 
 // Methods
-const goBack = () => {
-  router.push('/dashboard')
-}
-
 const formatAmount = (amount) => {
   if (typeof amount === 'number') {
     return amount.toFixed(2)
@@ -453,30 +445,9 @@ onMounted(async () => {
 .header-content {
   display: flex;
   align-items: center;
-  gap: 16px;
+  justify-content: center;
   position: relative;
   z-index: 1;
-}
-
-.back-button {
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.15);
-  transition: all 0.2s ease;
-}
-
-.back-button:hover {
-  background: rgba(255, 255, 255, 0.25);
-}
-
-.back-button:active {
-  transform: scale(0.95);
-  background: rgba(255, 255, 255, 0.3);
 }
 
 .header h1 {
