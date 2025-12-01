@@ -385,13 +385,14 @@
       @cancel="cancelDeleteGoal"
     />
 
-    <!-- Bottom Navigation -->
+    </template>
+
+    <!-- Bottom Navigation - immer sichtbar, auch während des Ladens -->
     <BottomNavigation 
       active-tab="dashboard" 
       @add-goal="showAddGoalModal = true"
       @action-created="handleActionCreated"
     />
-    </template>
   </div>
 </template>
 
