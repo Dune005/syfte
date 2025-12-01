@@ -11,9 +11,14 @@ Syfte ist eine moderne Spar-App basierend auf Nuxt.js, die es Nutzern ermöglich
 ## Frontend
 - Framework(s): Nuxt.js 4 mit Vue 3
 - Language/build tooling: TypeScript, Vite (integriert in Nuxt)
-- Styling: CSS
-- PWA: @vite-pwa/nuxt (Service Worker, Manifest, Offline Support)
-- Icons: Heroicons / eigene SVGs
+- Styling: CSS (kein Tailwind)
+- PWA: @vite-pwa/nuxt (vollständig konfiguriert)
+  - **Manifest:** Name "Syfte - Spar-App", Theme #35C2C1, standalone mode
+  - **Icons:** `pwa-192x192.png`, `pwa-512x512.png`, `apple-touch-icon.png` in `/public/`
+  - **iOS Support:** apple-mobile-web-app-capable, black-translucent status bar
+  - **Service Worker:** Workbox mit autoUpdate, Font-Caching für Google Fonts
+  - **Composable:** `usePwaInstall()` für Install-Prompt Handling
+- Icons: Lucide Vue Next / eigene SVGs
 
 ## Testing
 - Unit: (noch zu konfigurieren)
@@ -77,13 +82,14 @@ Syfte ist eine moderne Spar-App basierend auf Nuxt.js, die es Nutzern ermöglich
 - `app.vue` - **Root Layout (MUSS im Root-Verzeichnis liegen, nicht in /app!)** - Wrapper für alle Seiten mit `<NuxtPage />`
 - `pages/` - Route-basierte Pages (Nuxt Auto-Routing)
 - `components/` - Vue Komponenten
-- `composables/` - Vue Composables (wiederverwendbare Logik)
+- `composables/` - Vue Composables (wiederverwendbare Logik, z.B. `usePwaInstall.ts`)
 - `layouts/` - Nuxt Layouts
 - `middleware/` - Nuxt Middleware
 - `plugins/` - Nuxt Plugins
 - `server/` - Server API Routes
+- `scripts/` - Build-Scripts (z.B. `generate-pwa-icons.mjs`)
 - `assets/` - Statische Assets (CSS, Bilder)
-- `public/` - Öffentliche statische Dateien
+- `public/` - Öffentliche statische Dateien (inkl. PWA-Icons)
 - `db/` - Datenbankschemas und Migrationen
 - `Anleitungen/` - Projekt-Dokumentation und Security Guides
 - `.nuxt/` - Generierte Nuxt Dateien (auto-generiert)
@@ -102,6 +108,7 @@ Syfte ist eine moderne Spar-App basierend auf Nuxt.js, die es Nutzern ermöglich
 - `npm run build` — Build the application for production
 - `npm run preview` — Preview production build locally
 - `npm run postinstall` — Generate Nuxt types
+- `node scripts/generate-pwa-icons.mjs` — Regeneriere PWA-Icons aus Logo
 
 ## Development Server
 - Local: http://localhost:3200 (Standard-Port für Syfte)
