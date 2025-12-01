@@ -14,7 +14,8 @@ export const users = mysqlTable('users', {
   passwordHash: varchar('password_hash', { length: 255 }),
   profileImageUrl: text('profile_image_url'),
   totalSavedChf: decimal('total_saved_chf', { precision: 18, scale: 2 }).notNull().default('0'),
-  favoriteGoalId: bigint('favorite_goal_id', { mode: 'number' })
+  favoriteGoalId: bigint('favorite_goal_id', { mode: 'number' }),
+  isActive: tinyint('is_active').notNull().default(1)
 });
 
 // Auth identities for multi-auth support
@@ -31,9 +32,12 @@ export const authIdentities = mysqlTable('auth_identities', {
 export const userSettings = mysqlTable('user_settings', {
   userId: bigint('user_id', { mode: 'number' }).primaryKey(),
   timezone: varchar('timezone', { length: 64 }).notNull().default('Europe/Zurich'),
-  dailyPushHour: tinyint('daily_push_hour').notNull().default(10),
+  dailyPushHour: tinyint('daily_push_hour').notNull().default(12),
   dailyPushMinute: tinyint('daily_push_minute').notNull().default(0),
-  locale: varchar('locale', { length: 16 }).notNull().default('de-CH')
+  locale: varchar('locale', { length: 16 }).notNull().default('de-CH'),
+  pushEnabled: tinyint('push_enabled').notNull().default(1),
+  streakRemindersEnabled: tinyint('streak_reminders_enabled').notNull().default(1),
+  friendRequestsEnabled: tinyint('friend_requests_enabled').notNull().default(1)
 });
 
 // Push subscriptions for notifications

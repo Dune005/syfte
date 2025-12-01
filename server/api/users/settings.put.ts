@@ -8,7 +8,10 @@ const updateSettingsSchema = z.object({
   timezone: z.string().optional(),
   dailyPushHour: z.number().min(0).max(23).optional(),
   dailyPushMinute: z.number().min(0).max(59).optional(),
-  locale: z.string().optional()
+  locale: z.string().optional(),
+  pushEnabled: z.boolean().optional(),
+  streakRemindersEnabled: z.boolean().optional(),
+  friendRequestsEnabled: z.boolean().optional()
 });
 
 export default defineEventHandler(async (event) => {
@@ -42,9 +45,12 @@ export default defineEventHandler(async (event) => {
       const newSettings = {
         userId,
         timezone: validatedData.timezone || 'Europe/Zurich',
-        dailyPushHour: validatedData.dailyPushHour || 10,
+        dailyPushHour: validatedData.dailyPushHour || 12,
         dailyPushMinute: validatedData.dailyPushMinute || 0,
-        locale: validatedData.locale || 'de-CH'
+        locale: validatedData.locale || 'de-CH',
+        pushEnabled: validatedData.pushEnabled !== undefined ? (validatedData.pushEnabled ? 1 : 0) : 1,
+        streakRemindersEnabled: validatedData.streakRemindersEnabled !== undefined ? (validatedData.streakRemindersEnabled ? 1 : 0) : 1,
+        friendRequestsEnabled: validatedData.friendRequestsEnabled !== undefined ? (validatedData.friendRequestsEnabled ? 1 : 0) : 1
       };
 
       await db.insert(userSettings).values(newSettings);
@@ -61,6 +67,9 @@ export default defineEventHandler(async (event) => {
       if (validatedData.dailyPushHour !== undefined) updateData.dailyPushHour = validatedData.dailyPushHour;
       if (validatedData.dailyPushMinute !== undefined) updateData.dailyPushMinute = validatedData.dailyPushMinute;
       if (validatedData.locale !== undefined) updateData.locale = validatedData.locale;
+      if (validatedData.pushEnabled !== undefined) updateData.pushEnabled = validatedData.pushEnabled ? 1 : 0;
+      if (validatedData.streakRemindersEnabled !== undefined) updateData.streakRemindersEnabled = validatedData.streakRemindersEnabled ? 1 : 0;
+      if (validatedData.friendRequestsEnabled !== undefined) updateData.friendRequestsEnabled = validatedData.friendRequestsEnabled ? 1 : 0;
 
       await db
         .update(userSettings)

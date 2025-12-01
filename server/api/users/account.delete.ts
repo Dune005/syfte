@@ -1,7 +1,8 @@
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { db } from '../../utils/database/connection';
-import { users, savings, goals, friendships, userAchievements, pushSubscriptions } from '../../utils/database/schema';
+import { users, savings, goals, friendships, userAchievements, pushSubscriptions, authIdentities } from '../../utils/database/schema';
 import { verifyJWT, getAuthCookie } from '../../utils/auth';
+import { verifyPassword } from '../../utils/security';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -26,7 +27,7 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    // Get optional confirmation from request body
+    // Get confirmation and password from request body
     const body = await readBody(event);
     if (!body?.confirmDeletion) {
       throw createError({
@@ -35,39 +36,33 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    // Delete all user data in a transaction
-    await db.transaction(async (tx) => {
-      // Delete user achievements
-      await tx
-        .delete(userAchievements)
-        .where(eq(userAchievements.userId, payload.userId));
+    // Verify password if provided (for password-auth users)
+    if (body.password) {
+      const user = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, payload.userId))
+        .limit(1);
 
-      // Delete push subscriptions
-      await tx
-        .delete(pushSubscriptions)
-        .where(eq(pushSubscriptions.userId, payload.userId));
+      if (user.length > 0 && user[0].passwordHash) {
+        const isValidPassword = await verifyPassword(body.password, user[0].passwordHash);
+        if (!isValidPassword) {
+          throw createError({
+            statusCode: 401,
+            statusMessage: 'Passwort ist falsch.'
+          });
+        }
+      }
+    }
 
-      // Delete friendships (both as requester and addressee)
-      await tx.execute(`
-        DELETE FROM friendships 
-        WHERE requester_id = ${payload.userId} OR addressee_id = ${payload.userId}
-      `);
-
-      // Delete all savings
-      await tx
-        .delete(savings)
-        .where(eq(savings.userId, payload.userId));
-
-      // Delete all goals
-      await tx
-        .delete(goals)
-        .where(eq(goals.ownerId, payload.userId));
-
-      // Finally delete the user
-      await tx
-        .delete(users)
-        .where(eq(users.id, payload.userId));
-    });
+    // Soft delete: Set is_active to 0 instead of hard delete
+    await db
+      .update(users)
+      .set({
+        isActive: 0,
+        deletedAt: new Date()
+      })
+      .where(eq(users.id, payload.userId));
 
     // Clear auth cookie
     setCookie(event, 'auth-token', '', {
@@ -80,7 +75,7 @@ export default defineEventHandler(async (event) => {
 
     return {
       success: true,
-      message: 'Account erfolgreich gelöscht. Auf Wiedersehen! 👋'
+      message: 'Account wurde deaktiviert. Auf Wiedersehen! 👋'
     };
 
   } catch (error: any) {
