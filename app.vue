@@ -27,3 +27,29 @@ useHead({
   ]
 })
 </script>
+
+<style>
+/* Global Reset für randabfallende Header */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Nuxt Root Element */
+#__nuxt {
+  margin: 0;
+  padding: 0;
+}
+</style>
