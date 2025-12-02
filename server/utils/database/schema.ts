@@ -35,9 +35,9 @@ export const userSettings = mysqlTable('user_settings', {
   dailyPushHour: tinyint('daily_push_hour').notNull().default(12),
   dailyPushMinute: tinyint('daily_push_minute').notNull().default(0),
   locale: varchar('locale', { length: 16 }).notNull().default('de-CH'),
-  pushEnabled: tinyint('push_enabled').notNull().default(1),
-  streakRemindersEnabled: tinyint('streak_reminders_enabled').notNull().default(1),
-  friendRequestsEnabled: tinyint('friend_requests_enabled').notNull().default(1)
+  pushEnabled: tinyint('push_enabled').notNull().default(0),
+  streakRemindersEnabled: tinyint('streak_reminders_enabled').notNull().default(0),
+  friendRequestsEnabled: tinyint('friend_requests_enabled').notNull().default(0)
 });
 
 // Push subscriptions for notifications

@@ -1,8 +1,5 @@
 <template>
   <div class="dashboard">
-    <!-- Push Notification Prompt -->
-    <PushNotificationPrompt />
-    
     <!-- Skeleton Loader -->
     <SkeletonLoader v-if="isLoading" />
     

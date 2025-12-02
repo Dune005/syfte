@@ -72,7 +72,7 @@
             <input 
               type="checkbox" 
               v-model="notificationSettings.pushEnabled" 
-              @change="updateNotifications"
+              @change="handlePushToggle"
             />
             <span class="toggle-slider"></span>
           </label>
@@ -208,11 +208,11 @@ const passwordData = ref({
 })
 
 const notificationSettings = ref({
-  pushEnabled: true,
+  pushEnabled: false,
   dailyPushHour: 12,
   dailyPushMinute: 0,
-  streakRemindersEnabled: true,
-  friendRequestsEnabled: true
+  streakRemindersEnabled: false,
+  friendRequestsEnabled: false
 })
 
 // Load settings
@@ -221,11 +221,11 @@ const loadSettings = async () => {
     const response: any = await $fetch('/api/users/settings')
     const settings = response.settings
     notificationSettings.value = {
-      pushEnabled: settings.pushEnabled ?? true,
+      pushEnabled: settings.pushEnabled ?? false,
       dailyPushHour: settings.dailyPushHour ?? 12,
       dailyPushMinute: settings.dailyPushMinute ?? 0,
-      streakRemindersEnabled: settings.streakRemindersEnabled ?? true,
-      friendRequestsEnabled: settings.friendRequestsEnabled ?? true
+      streakRemindersEnabled: settings.streakRemindersEnabled ?? false,
+      friendRequestsEnabled: settings.friendRequestsEnabled ?? false
     }
   } catch (error) {
     console.error('Failed to load settings:', error)
@@ -268,6 +268,27 @@ const changePassword = async () => {
     showMessage(error.data?.statusMessage || 'Fehler beim Ändern des Passworts', 'error')
   } finally {
     isSaving.value = false
+  }
+}
+
+// Handle push notification toggle - show permission prompt when enabling
+const handlePushToggle = async () => {
+  if (notificationSettings.value.pushEnabled) {
+    // User wants to enable push notifications - show prompt
+    const { subscribe } = usePushNotifications()
+    const success = await subscribe()
+    
+    if (success) {
+      // Successfully subscribed, update settings
+      await updateNotifications()
+    } else {
+      // Failed to subscribe, revert toggle
+      notificationSettings.value.pushEnabled = false
+      showMessage('Push-Benachrichtigungen konnten nicht aktiviert werden', 'error')
+    }
+  } else {
+    // User disabled push notifications
+    await updateNotifications()
   }
 }
 

@@ -26,16 +26,16 @@ export default defineEventHandler(async (event) => {
       .limit(1);
 
     if (settings.length === 0) {
-      // Create default settings if none exist
+      // Create default settings if none exist (all notifications disabled by default)
       const defaultSettings = {
         userId,
         timezone: 'Europe/Zurich',
         dailyPushHour: 12,
         dailyPushMinute: 0,
         locale: 'de-CH',
-        pushEnabled: true,
-        streakRemindersEnabled: true,
-        friendRequestsEnabled: true
+        pushEnabled: false,
+        streakRemindersEnabled: false,
+        friendRequestsEnabled: false
       };
 
       await db.insert(userSettings).values(defaultSettings);

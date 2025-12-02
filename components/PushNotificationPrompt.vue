@@ -1,13 +1,5 @@
 <template>
   <ClientOnly>
-    <!-- Debug Info Banner (Always visible during testing) -->
-    <div class="debug-banner">
-      <div style="font-size: 11px; padding: 8px; background: #333; color: white; position: fixed; top: 0; left: 0; right: 0; z-index: 99999;">
-        <div>Support: {{ isSupported ? '✅' : '❌' }} | Permission: {{ permission }} | Subscribed: {{ isSubscribed ? '✅' : '❌' }}</div>
-        <div>ShowPrompt: {{ showPrompt ? '✅ YES' : '❌ NO' }}</div>
-      </div>
-    </div>
-
     <div v-if="showPrompt" class="push-notification-prompt">
     <div class="prompt-overlay" @click="dismiss"></div>
     <div class="prompt-card">
@@ -58,52 +50,20 @@ const {
   checkSubscriptionStatus 
 } = usePushNotifications();
 
-// Check if we should show the prompt
-onMounted(async () => {
-  if (!process.client) return; // Safety check for SSR
+// Expose show method for external triggering
+const show = () => {
+  if (!process.client) return;
   
-  console.log('🔔 Push Notification Prompt - Component Mounted');
-  
-  // Check support immediately
   const supported = checkSupport();
-  console.log('Push Notification Debug:');
-  console.log('- isSupported:', supported);
-  console.log('- permission:', permission.value);
-  console.log('- isSubscribed:', isSubscribed.value);
-  console.log('- process.client:', process.client);
-  
-  // TEMPORARY: Force show for debugging
-  // Remove this after testing!
-  setTimeout(() => {
-    console.log('⏰ 3 seconds passed, checking conditions...');
-    const dismissed = localStorage.getItem('push-prompt-dismissed');
-    console.log('- dismissed:', dismissed);
-    
-    // Log all conditions
-    console.log('Conditions check:');
-    console.log('  1. isSupported:', supported);
-    console.log('  2. permission !== denied:', permission.value !== 'denied');
-    console.log('  3. not dismissed:', !dismissed);
-    
-    if (supported && permission.value !== 'denied' && !dismissed) {
-      checkSubscriptionStatus().then(() => {
-        console.log('  4. After subscription check - isSubscribed:', isSubscribed.value);
-        
-        if (!isSubscribed.value) {
-          console.log('✅ ALL CONDITIONS MET - Showing push prompt!');
-          showPrompt.value = true;
-        } else {
-          console.log('❌ Already subscribed');
-        }
-      });
-    } else {
-      console.log('❌ Not showing prompt because:');
-      if (!supported) console.log('  ❌ Push not supported');
-      if (permission.value === 'denied') console.log('  ❌ Permission denied');
-      if (dismissed) console.log('  ❌ Dismissed until:', dismissed);
-    }
-  }, 3000);
-});
+  if (supported && permission.value !== 'denied') {
+    showPrompt.value = true;
+  } else {
+    console.warn('Cannot show push prompt:', { supported, permission: permission.value });
+  }
+};
+
+// Expose to parent components
+defineExpose({ show });
 
 const enableNotifications = async () => {
   const success = await subscribe();
