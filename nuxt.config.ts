@@ -44,8 +44,26 @@ export default defineNuxtConfig({
     },
     workbox: {
       navigateFallback: '/',
+      navigateFallbackDenylist: [/^\/api\//], // API-Calls nicht cachen
       globPatterns: ['**/*.{js,css,html,png,svg,ico,woff,woff2}'],
+      // Wichtig für iOS PWA: Alle Navigationen im Scope halten
+      navigationPreload: false, // Deaktiviert für bessere iOS-Kompatibilität
       runtimeCaching: [
+        // Cache für interne Seiten-Navigation (wichtig für iOS PWA)
+        {
+          urlPattern: ({ request }) => request.mode === 'navigate',
+          handler: 'NetworkFirst',
+          options: {
+            cacheName: 'pages-cache',
+            expiration: {
+              maxEntries: 50,
+              maxAgeSeconds: 60 * 60 * 24 // 1 Tag
+            },
+            cacheableResponse: {
+              statuses: [0, 200]
+            }
+          }
+        },
         {
           urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
           handler: 'CacheFirst',
@@ -91,19 +109,48 @@ export default defineNuxtConfig({
       title: 'Syfte - Spar-App',
       meta: [
         { charset: 'utf-8' },
-        { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
+        { name: 'viewport', content: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover' },
         { name: 'description', content: 'Deine persönliche Spar-App für cleveres Geldsparen' },
         { name: 'theme-color', content: '#35C2C1' },
+        // iOS PWA Meta-Tags (wichtig für ältere iOS-Versionen)
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
         { name: 'apple-mobile-web-app-title', content: 'Syfte' },
+        // Legacy iOS Support (für ältere Versionen < iOS 11.3)
+        { name: 'apple-touch-fullscreen', content: 'yes' },
+        // Android/Chrome PWA Support
+        { name: 'mobile-web-app-capable', content: 'yes' },
+        { name: 'application-name', content: 'Syfte' },
+        // Allgemeine Meta-Tags
         { name: 'format-detection', content: 'telephone=no' },
-        { name: 'mobile-web-app-capable', content: 'yes' }
+        { name: 'format-detection', content: 'email=no' },
+        { name: 'format-detection', content: 'address=no' },
+        { name: 'msapplication-TileColor', content: '#35C2C1' },
+        { name: 'msapplication-tap-highlight', content: 'no' },
+        // Verhindere Browser-Caching von HTML für frische PWA-Updates
+        { 'http-equiv': 'Cache-Control', content: 'no-cache, no-store, must-revalidate' },
+        { 'http-equiv': 'Pragma', content: 'no-cache' },
+        { 'http-equiv': 'Expires', content: '0' }
       ],
       link: [
+        // Apple Touch Icons (mehrere Größen für bessere Kompatibilität)
+        { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
         { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' },
+        { rel: 'apple-touch-icon', sizes: '152x152', href: '/apple-touch-icon.png' },
+        { rel: 'apple-touch-icon', sizes: '144x144', href: '/apple-touch-icon.png' },
+        { rel: 'apple-touch-icon', sizes: '120x120', href: '/apple-touch-icon.png' },
+        { rel: 'apple-touch-icon', sizes: '114x114', href: '/apple-touch-icon.png' },
+        { rel: 'apple-touch-icon', sizes: '76x76', href: '/apple-touch-icon.png' },
+        { rel: 'apple-touch-icon', sizes: '72x72', href: '/apple-touch-icon.png' },
+        { rel: 'apple-touch-icon', sizes: '60x60', href: '/apple-touch-icon.png' },
+        { rel: 'apple-touch-icon', sizes: '57x57', href: '/apple-touch-icon.png' },
+        // Apple Startup Images (Splash Screens für iOS)
+        { rel: 'apple-touch-startup-image', href: '/apple-touch-icon.png' },
+        // Standard Favicons
         { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32x32.png' },
         { rel: 'icon', type: 'image/png', sizes: '16x16', href: '/favicon-16x16.png' },
+        { rel: 'shortcut icon', href: '/favicon.ico' },
+        // Google Fonts
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
         { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800;900&display=swap' }
