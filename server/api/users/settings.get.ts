@@ -30,9 +30,12 @@ export default defineEventHandler(async (event) => {
       const defaultSettings = {
         userId,
         timezone: 'Europe/Zurich',
-        dailyPushHour: 10,
+        dailyPushHour: 12,
         dailyPushMinute: 0,
-        locale: 'de-CH'
+        locale: 'de-CH',
+        pushEnabled: true,
+        streakRemindersEnabled: true,
+        friendRequestsEnabled: true
       };
 
       await db.insert(userSettings).values(defaultSettings);
@@ -43,9 +46,15 @@ export default defineEventHandler(async (event) => {
       };
     }
 
+    const settingsData = settings[0];
     return {
       success: true,
-      settings: settings[0]
+      settings: {
+        ...settingsData,
+        pushEnabled: !!settingsData.pushEnabled,
+        streakRemindersEnabled: !!settingsData.streakRemindersEnabled,
+        friendRequestsEnabled: !!settingsData.friendRequestsEnabled
+      }
     };
 
   } catch (error: any) {

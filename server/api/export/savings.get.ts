@@ -34,7 +34,7 @@ export default defineEventHandler(async (event) => {
 
     const userName = user.length > 0 ? `${user[0].firstName} ${user[0].lastName}` : 'User';
 
-    // Fetch all user savings with related data
+    // Fetch all user savings with related data (newest first)
     const userSavings = await db
       .select({
         id: savings.id,
@@ -42,8 +42,10 @@ export default defineEventHandler(async (event) => {
         note: savings.note,
         occurredAt: savings.occurredAt,
         createdAt: savings.createdAt,
+        goalId: savings.goalId,
         goalTitle: goals.title,
-        actionTitle: actions.title
+        actionTitle: actions.title,
+        actionDescription: actions.description
       })
       .from(savings)
       .leftJoin(goals, eq(savings.goalId, goals.id))
@@ -51,30 +53,74 @@ export default defineEventHandler(async (event) => {
       .where(eq(savings.userId, userId))
       .orderBy(desc(savings.occurredAt));
 
-    if (format === 'csv') {
-      // Generate CSV
-      const csvHeaders = 'ID,Amount (CHF),Goal,Action,Note,Occurred At,Created At\n';
-      const csvRows = userSavings.map(saving => {
-        const escapeCsv = (str: string | null) => {
-          if (!str) return '';
-          if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-            return `"${str.replace(/"/g, '""')}"`;
-          }
-          return str;
+    // Calculate total amount and get date range
+    const totalAmount = userSavings.reduce((sum, s) => sum + Number(s.amountChf), 0);
+    const oldestDate = userSavings.length > 0 ? userSavings[userSavings.length - 1].occurredAt : null;
+    const newestDate = userSavings.length > 0 ? userSavings[0].occurredAt : null;
+    
+    // Group savings by goal for detailed breakdown
+    const savingsByGoal = userSavings.reduce((acc, saving) => {
+      const goalKey = saving.goalId || 0;
+      if (!acc[goalKey]) {
+        acc[goalKey] = {
+          goalTitle: saving.goalTitle || 'Kein Sparziel',
+          savings: [],
+          total: 0
         };
+      }
+      acc[goalKey].savings.push(saving);
+      acc[goalKey].total += Number(saving.amountChf);
+      return acc;
+    }, {} as Record<number, { goalTitle: string; savings: typeof userSavings; total: number }>);
 
-        return [
-          saving.id,
-          saving.amountChf,
-          escapeCsv(saving.goalTitle || ''),
-          escapeCsv(saving.actionTitle || ''),
-          escapeCsv(saving.note || ''),
-          saving.occurredAt?.toISOString() || '',
-          saving.createdAt?.toISOString() || ''
-        ].join(',');
-      }).join('\n');
+    if (format === 'csv') {
+      const escapeCsv = (str: string | null) => {
+        if (!str) return '';
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      };
 
-      const csvContent = csvHeaders + csvRows;
+      let csvContent = '';
+      
+      // Summary Section
+      csvContent += 'ZUSAMMENFASSUNG\n';
+      csvContent += `Zeitraum,${oldestDate ? new Date(oldestDate).toLocaleDateString('de-CH') : '-'} bis ${newestDate ? new Date(newestDate).toLocaleDateString('de-CH') : '-'}\n`;
+      csvContent += `Gesamtbetrag gespart,CHF ${totalAmount.toFixed(2)}\n`;
+      csvContent += `Anzahl Transaktionen,${userSavings.length}\n`;
+      csvContent += '\n';
+
+      // All Transactions Section
+      csvContent += 'ALLE TRANSAKTIONEN\n';
+      csvContent += 'Datum,Betrag,Sparziel,Aktion,Notiz\n';
+      userSavings.forEach(saving => {
+        const note = saving.actionDescription || saving.note || '';
+        csvContent += [
+          saving.occurredAt ? new Date(saving.occurredAt).toLocaleDateString('de-CH') : '-',
+          `CHF ${Number(saving.amountChf).toFixed(2)}`,
+          escapeCsv(saving.goalTitle || '-'),
+          escapeCsv(saving.actionTitle || '-'),
+          escapeCsv(note)
+        ].join(',') + '\n';
+      });
+      csvContent += '\n';
+
+      // Breakdown by Goal
+      csvContent += 'DETAILLIERTE AUFSCHLÜSSELUNG PRO SPARZIEL\n';
+      Object.values(savingsByGoal).forEach(goalData => {
+        csvContent += `\n"${goalData.goalTitle}",Gesamt: CHF ${goalData.total.toFixed(2)}\n`;
+        csvContent += 'Datum,Betrag,Aktion,Notiz\n';
+        goalData.savings.forEach(saving => {
+          const note = saving.actionDescription || saving.note || '';
+          csvContent += [
+            saving.occurredAt ? new Date(saving.occurredAt).toLocaleDateString('de-CH') : '-',
+            `CHF ${Number(saving.amountChf).toFixed(2)}`,
+            escapeCsv(saving.actionTitle || '-'),
+            escapeCsv(note)
+          ].join(',') + '\n';
+        });
+      });
 
       // Set CSV headers
       setHeader(event, 'Content-Type', 'text/csv');
@@ -85,7 +131,10 @@ export default defineEventHandler(async (event) => {
 
     if (format === 'pdf') {
       // Generate PDF
-      const doc = new PDFDocument({ margin: 50 });
+      const doc = new PDFDocument({ 
+        margin: 50,
+        bufferPages: true // Enable page buffering for page numbers
+      });
       const chunks: Buffer[] = [];
 
       doc.on('data', (chunk) => chunks.push(chunk));
@@ -101,16 +150,20 @@ export default defineEventHandler(async (event) => {
         doc.moveDown(2);
 
         // Summary
-        const totalAmount = userSavings.reduce((sum, s) => sum + Number(s.amountChf), 0);
         doc.fontSize(14).fillColor('#1E232C').text('Zusammenfassung', { underline: true });
         doc.moveDown(0.5);
         doc.fontSize(11).fillColor('#666');
-        doc.text(`Gesamtanzahl Sparaktionen: ${userSavings.length}`);
-        doc.text(`Gesamtbetrag: CHF ${totalAmount.toFixed(2)}`);
+        const dateRangeText = oldestDate && newestDate 
+          ? `${new Date(oldestDate).toLocaleDateString('de-CH')} bis ${new Date(newestDate).toLocaleDateString('de-CH')}`
+          : 'Keine Transaktionen';
+        doc.text(`Zeitraum: ${dateRangeText}`);
+        doc.text('Gesamtbetrag gespart: ', { continued: true });
+        doc.font('Helvetica-Bold').text(`CHF ${totalAmount.toFixed(2)}`);
+        doc.font('Helvetica').text(`Anzahl Transaktionen: ${userSavings.length}`);
         doc.moveDown(2);
 
-        // Transactions table
-        doc.fontSize(14).fillColor('#1E232C').text('Transaktionen', { underline: true });
+        // All Transactions table
+        doc.fontSize(14).fillColor('#1E232C').text('Alle Transaktionen', { underline: true });
         doc.moveDown(1);
 
         // Table header
@@ -150,7 +203,7 @@ export default defineEventHandler(async (event) => {
           const amount = `CHF ${Number(saving.amountChf).toFixed(2)}`;
           const goal = saving.goalTitle || '-';
           const action = saving.actionTitle || '-';
-          const note = saving.note || '-';
+          const note = saving.actionDescription || saving.note || '-';
 
           doc.fontSize(8);
           doc.text(date, 50, rowY, { width: colWidths.date });
@@ -167,13 +220,66 @@ export default defineEventHandler(async (event) => {
           }
         });
 
-        // Footer
-        doc.fontSize(8).fillColor('#999').text(
-          'Generiert mit Syfte - Deine Spar-App',
-          50,
-          doc.page.height - 50,
-          { align: 'center' }
-        );
+        // Breakdown by Goal Section - Title as separate section
+        if (doc.y > 650) {
+          doc.addPage();
+        }
+        doc.moveDown(3);
+        doc.fontSize(14).fillColor('#1E232C').font('Helvetica-Bold').text('Detaillierte Aufschlüsselung pro Sparziel', 50, doc.y, { underline: true, align: 'left' });
+        doc.moveDown(2);
+
+        Object.values(savingsByGoal).forEach((goalData, goalIndex) => {
+          // Check if we need a new page
+          if (doc.y > 650) {
+            doc.addPage();
+          }
+
+          // Goal header
+          doc.fontSize(12).fillColor('#35C2C1').font('Helvetica-Bold');
+          doc.text(goalData.goalTitle, 50, doc.y, { continued: false, align: 'left' });
+          doc.fontSize(10).fillColor('#666').font('Helvetica');
+          doc.text(`Gesamt: CHF ${goalData.total.toFixed(2)} (${goalData.savings.length} Transaktionen)`, 50, doc.y, { align: 'left' });
+          doc.moveDown(0.5);
+
+          // Mini table for this goal
+          const miniTableTop = doc.y;
+          doc.fontSize(8).fillColor('#35C2C1').font('Helvetica-Bold');
+          doc.text('Datum', 50, miniTableTop, { width: 80 });
+          doc.text('Betrag', 130, miniTableTop, { width: 70 });
+          doc.text('Aktion', 200, miniTableTop, { width: 120 });
+          doc.text('Notiz', 320, miniTableTop, { width: 230 });
+          
+          doc.moveTo(50, miniTableTop + 12).lineTo(550, miniTableTop + 12).stroke('#DDD');
+          doc.moveDown(0.8);
+
+          // Transactions for this goal
+          doc.font('Helvetica').fillColor('#666');
+          goalData.savings.forEach((saving, idx) => {
+            if (doc.y > 700) {
+              doc.addPage();
+            }
+
+            const date = saving.occurredAt ? new Date(saving.occurredAt).toLocaleDateString('de-CH') : '-';
+            const amount = `CHF ${Number(saving.amountChf).toFixed(2)}`;
+            const action = saving.actionTitle || '-';
+            const note = saving.actionDescription || saving.note || '-';
+
+            const currentY = doc.y;
+            doc.fontSize(7);
+            doc.text(date, 50, currentY, { width: 80 });
+            doc.text(amount, 130, currentY, { width: 70 });
+            doc.text(action, 200, currentY, { width: 120, height: 15 });
+            doc.text(note, 320, currentY, { width: 230, height: 15 });
+
+            doc.moveDown(1.2);
+          });
+
+          doc.moveDown(1.5);
+          if (goalIndex < Object.values(savingsByGoal).length - 1) {
+            doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke('#CCC');
+            doc.moveDown(2.5);
+          }
+        });
 
         doc.end();
       });

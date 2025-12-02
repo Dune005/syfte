@@ -9,9 +9,9 @@ const updateSettingsSchema = z.object({
   dailyPushHour: z.number().min(0).max(23).optional(),
   dailyPushMinute: z.number().min(0).max(59).optional(),
   locale: z.string().optional(),
-  pushEnabled: z.boolean().optional(),
-  streakRemindersEnabled: z.boolean().optional(),
-  friendRequestsEnabled: z.boolean().optional()
+  pushEnabled: z.union([z.boolean(), z.number()]).transform(val => !!val).optional(),
+  streakRemindersEnabled: z.union([z.boolean(), z.number()]).transform(val => !!val).optional(),
+  friendRequestsEnabled: z.union([z.boolean(), z.number()]).transform(val => !!val).optional()
 });
 
 export default defineEventHandler(async (event) => {

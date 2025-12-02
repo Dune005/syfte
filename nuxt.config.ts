@@ -9,6 +9,9 @@ export default defineNuxtConfig({
   // PWA Konfiguration
   pwa: {
     registerType: 'autoUpdate',
+    injectManifest: {
+      globPatterns: ['**/*.{js,css,html,png,svg,ico,woff,woff2}']
+    },
     manifest: {
       name: 'Syfte - Spar-App',
       short_name: 'Syfte',
