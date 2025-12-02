@@ -22,17 +22,17 @@ export default defineNuxtConfig({
       lang: 'de',
       icons: [
         {
-          src: '/pwa-192x192.png',
+          src: '/android-chrome-192x192.png',
           sizes: '192x192',
           type: 'image/png'
         },
         {
-          src: '/pwa-512x512.png',
+          src: '/android-chrome-512x512.png',
           sizes: '512x512',
           type: 'image/png'
         },
         {
-          src: '/pwa-512x512.png',
+          src: '/android-chrome-512x512.png',
           sizes: '512x512',
           type: 'image/png',
           purpose: 'maskable'
@@ -98,8 +98,9 @@ export default defineNuxtConfig({
         { name: 'mobile-web-app-capable', content: 'yes' }
       ],
       link: [
-        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
-        { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+        { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' },
+        { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32x32.png' },
+        { rel: 'icon', type: 'image/png', sizes: '16x16', href: '/favicon-16x16.png' },
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
         { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800;900&display=swap' }
