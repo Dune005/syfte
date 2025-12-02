@@ -279,7 +279,9 @@ const handlePushToggle = async () => {
     const success = await subscribe()
     
     if (success) {
-      // Successfully subscribed, update settings
+      // Successfully subscribed, enable all related notifications
+      notificationSettings.value.streakRemindersEnabled = true
+      notificationSettings.value.friendRequestsEnabled = true
       await updateNotifications()
     } else {
       // Failed to subscribe, revert toggle
