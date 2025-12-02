@@ -41,8 +41,26 @@ export default defineNuxtConfig({
     },
     workbox: {
       navigateFallback: '/',
+      navigateFallbackDenylist: [/^\/api\//], // API-Calls nicht cachen
       globPatterns: ['**/*.{js,css,html,png,svg,ico,woff,woff2}'],
+      // Wichtig für iOS PWA: Alle Navigationen im Scope halten
+      navigationPreload: false, // Deaktiviert für bessere iOS-Kompatibilität
       runtimeCaching: [
+        // Cache für interne Seiten-Navigation (wichtig für iOS PWA)
+        {
+          urlPattern: ({ request }) => request.mode === 'navigate',
+          handler: 'NetworkFirst',
+          options: {
+            cacheName: 'pages-cache',
+            expiration: {
+              maxEntries: 50,
+              maxAgeSeconds: 60 * 60 * 24 // 1 Tag
+            },
+            cacheableResponse: {
+              statuses: [0, 200]
+            }
+          }
+        },
         {
           urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
           handler: 'CacheFirst',
@@ -102,8 +120,14 @@ export default defineNuxtConfig({
         { name: 'application-name', content: 'Syfte' },
         // Allgemeine Meta-Tags
         { name: 'format-detection', content: 'telephone=no' },
+        { name: 'format-detection', content: 'email=no' },
+        { name: 'format-detection', content: 'address=no' },
         { name: 'msapplication-TileColor', content: '#35C2C1' },
-        { name: 'msapplication-tap-highlight', content: 'no' }
+        { name: 'msapplication-tap-highlight', content: 'no' },
+        // Verhindere Browser-Caching von HTML für frische PWA-Updates
+        { 'http-equiv': 'Cache-Control', content: 'no-cache, no-store, must-revalidate' },
+        { 'http-equiv': 'Pragma', content: 'no-cache' },
+        { 'http-equiv': 'Expires', content: '0' }
       ],
       link: [
         // Apple Touch Icons (mehrere Größen für bessere Kompatibilität)
