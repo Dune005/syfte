@@ -32,7 +32,7 @@
         <div class="savings-card">
           <div class="savings-main">
             <span class="savings-label">Heute gespart</span>
-            <span class="savings-amount">{{ todaySavings }} CHF</span>
+            <span class="savings-amount">{{ formattedTodaySavings }} CHF</span>
           </div>
           <div class="savings-divider"></div>
           <div class="savings-meta">
@@ -419,6 +419,12 @@ const greeting = computed(() => {
 // Computed: Vorname des Nutzers
 const firstName = computed(() => {
   return currentUser.value?.firstName || 'Sparfuchs'
+})
+
+// Computed: Formatierter Tagessparbetrag (auf 2 Dezimalstellen gerundet)
+const formattedTodaySavings = computed(() => {
+  const value = todaySavings.value || 0
+  return (Math.round(value * 100) / 100).toFixed(2)
 })
 
 // Computed: Motivierender Untertitel
