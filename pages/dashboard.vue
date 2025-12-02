@@ -624,10 +624,10 @@ const addActionToGoal = async (actionId, goalId) => {
       successActions.value = successActions.value.filter(id => id !== actionId)
     }, 2000)
     
-    // Aktualisiere die heutigen Ersparnisse
+    // Aktualisiere die heutigen Ersparnisse (gerundet auf 2 Dezimalstellen)
     const action = actions.value.find(a => a.id === actionId)
     if (action) {
-      todaySavings.value += action.defaultChf
+      todaySavings.value = Math.round((todaySavings.value + action.defaultChf) * 100) / 100
     }
     
     // Aktualisiere das entsprechende Ziel
