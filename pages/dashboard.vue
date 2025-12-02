@@ -106,15 +106,12 @@
           :class="{ 'goal-completed': goal.isCompleted }"
           @click="!goal.isCompleted && navigateToGoal(goal.id)"
         >
-          <!-- Completed Badge -->
+          <!-- Completed Badge with Delete Option -->
           <div v-if="goal.isCompleted" class="completed-badge">
-            <Check :size="16" color="white" />
-            <span>Erreicht!</span>
-          </div>
-          
-          <!-- Delete Icon for Completed Goals -->
-          <div v-if="goal.isCompleted" class="delete-goal-icon" @click.stop="deleteGoal(goal)">
-            <Trash2 :size="18" color="#EF4444" />
+            <Check :size="18" color="white" />
+            <button class="badge-delete-btn" @click.stop="deleteGoal(goal)" aria-label="Sparziel löschen">
+              <Trash2 :size="14" color="white" />
+            </button>
           </div>
 
           <div class="goal-image">
@@ -1602,47 +1599,35 @@ onBeforeUnmount(() => {
   right: 12px;
   background: linear-gradient(135deg, #10B981 0%, #059669 100%);
   color: white;
-  padding: 6px 12px;
+  padding: 6px;
   border-radius: 20px;
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 700;
+  gap: 4px;
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
   z-index: 10;
 }
 
-.completed-badge span {
-  line-height: 1;
-}
-
-.delete-goal-icon {
-  position: absolute;
-  top: 12px;
-  right: 140px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(4px);
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
+.badge-delete-btn {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  z-index: 15;
+  padding: 0;
 }
 
-.delete-goal-icon:hover {
-  background: #FEE2E2;
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+.badge-delete-btn:hover {
+  background: rgba(239, 68, 68, 0.8);
 }
 
-.delete-goal-icon:active {
-  transform: scale(0.95);
+.badge-delete-btn:active {
+  transform: scale(0.9);
 }
 
 /* Add Circle - used in no-goals-section */
