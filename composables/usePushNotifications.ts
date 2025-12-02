@@ -10,8 +10,20 @@ export const usePushNotifications = () => {
   // Check if push notifications are supported
   const checkSupport = () => {
     if (process.client) {
-      isSupported.value = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+      const hasServiceWorker = 'serviceWorker' in navigator;
+      const hasPushManager = 'PushManager' in window;
+      const hasNotification = 'Notification' in window;
+      
+      console.log('Push Support Check:', {
+        hasServiceWorker,
+        hasPushManager,
+        hasNotification
+      });
+      
+      isSupported.value = hasServiceWorker && hasPushManager && hasNotification;
       permission.value = Notification.permission;
+      
+      console.log('Final Support:', isSupported.value, 'Permission:', permission.value);
     }
     return isSupported.value;
   };
