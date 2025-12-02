@@ -384,10 +384,9 @@ const createAction = async () => {
         setTimeout(() => {
           handleCloseActionModal()
           
-          // Wenn wir auf dem Dashboard sind, navigiere zur gleichen Route um neu zu laden
-          // (PWA-freundlicher als window.location.reload())
+          // Wenn wir auf dem Dashboard sind, lade die Seite neu um die neue Aktion zu sehen
           if (props.activeTab === 'dashboard') {
-            router.replace({ path: '/dashboard', query: { refresh: Date.now() } })
+            window.location.reload()
           }
         }, 1500)
       } catch (assignError) {
