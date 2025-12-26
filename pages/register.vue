@@ -1,12 +1,11 @@
 <template>
   <div class="register-page">
-    <!-- Back Button -->
-    <NuxtLink to="/" class="back-button" aria-label="Zurück">
-      <svg viewBox="0 0 41 41" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="20.5" cy="20.5" r="20.5" fill="#F7F8F9"/>
-        <path d="M15.5 11.5L8 20.5L15.5 29.5" stroke="#1E232C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </NuxtLink>
+    <!-- Header mit Back Button -->
+    <header class="page-header">
+      <NuxtLink to="/" class="back-button" aria-label="Zurück">
+        <ArrowLeft :size="24" color="#1E232C" />
+      </NuxtLink>
+    </header>
 
     <!-- Logo -->
     <img src="/images/syfte_Logo/Logo_syfte.png" alt="Syfte Logo" class="logo" />
@@ -112,6 +111,7 @@
 <script setup>
 import { RegisterSchema } from '~/server/utils/schemas'
 import { toRaw } from 'vue'
+import { ArrowLeft } from 'lucide-vue-next'
 
 useHead({
   title: 'Registrieren - Syfte',
@@ -233,38 +233,47 @@ const handleRegister = async () => {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-.back-button {
+/* Header */
+.page-header {
   position: absolute;
-  top: calc(56px + env(safe-area-inset-top, 0px));
-  left: 31px;
-  width: 41px;
-  height: 41px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  transition: transform 0.2s ease;
-  text-decoration: none;
-  display: block;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 16px;
+  padding-top: calc(16px + env(safe-area-inset-top, 0px));
   z-index: 10;
 }
 
-.back-button:hover {
-  transform: scale(1.05);
+.back-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: #F7F8F9;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s ease;
 }
 
-.back-button svg {
-  width: 100%;
-  height: 100%;
+.back-button:hover {
+  background: #E8ECF4;
+}
+
+.back-button:active {
+  transform: scale(0.95);
+  background: #DDE3ED;
 }
 
 .logo {
   position: absolute;
-  top: calc(75px + env(safe-area-inset-top, 0px));
+  top: calc(90px + env(safe-area-inset-top, 0px));
   left: 50%;
   transform: translateX(-50%);
-  width: 90px;
-  height: 90px;
+  width: 80px;
+  height: 80px;
   object-fit: contain;
 }
 

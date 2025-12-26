@@ -1,10 +1,11 @@
 <template>
   <div class="goal-detail">
-    <!-- Back Button -->
-    <div class="back-button" @click="goBack">
-      <ChevronLeft :size="24" color="#35C2C1" />
-      <span>Zurück</span>
-    </div>
+    <!-- Header mit Back Button -->
+    <header class="page-header">
+      <button class="back-button" @click="goBack" aria-label="Zurück">
+        <ArrowLeft :size="24" color="#1E232C" />
+      </button>
+    </header>
 
     <!-- Loading State -->
     <div v-if="loading" class="loading">
@@ -210,7 +211,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ChevronLeft, Plus, Check, CircleFadingPlus, Trash2, SquarePlus } from 'lucide-vue-next'
+import { ArrowLeft, Plus, Check, CircleFadingPlus, Trash2, SquarePlus } from 'lucide-vue-next'
 import BottomNavigation from '~/components/BottomNavigation.vue'
 
 const router = useRouter()
@@ -490,20 +491,33 @@ onMounted(() => {
   padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
 }
 
-/* Back Button */
+/* Header */
+.page-header {
+  padding: 16px 0;
+  padding-top: calc(16px + env(safe-area-inset-top, 0px));
+  margin-bottom: 8px;
+}
+
 .back-button {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 24px;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: #F7F8F9;
+  border: none;
+  border-radius: 12px;
   cursor: pointer;
-  color: #35C2C1;
-  font-weight: 600;
-  transition: transform 0.2s;
+  transition: all 0.2s ease;
 }
 
 .back-button:hover {
-  transform: translateX(-2px);
+  background: #E8ECF4;
+}
+
+.back-button:active {
+  transform: scale(0.95);
+  background: #DDE3ED;
 }
 
 /* Loading State */

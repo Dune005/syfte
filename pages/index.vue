@@ -12,6 +12,10 @@
         <ButtonPrimary to="/login">Login</ButtonPrimary>
         <ButtonSecondary to="/register">Registrieren</ButtonSecondary>
       </div>
+
+      <NuxtLink to="/wie-es-funktioniert" class="info-link">
+        Wie funktioniert syfte?
+      </NuxtLink>
     </div>
 
     <img src="/images/syfte_Schaf/syfte_Schaf.png" alt="Syfte Maskottchen" class="mascot" />
@@ -120,6 +124,24 @@ useHead({
   margin-top: 69px;
   opacity: 0;
   animation: fadeInUp 0.6s ease-out 0.5s forwards;
+}
+
+.info-link {
+  margin-top: 30px;
+  font-family: 'Lato', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  color: #FFFFFF;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  opacity: 0;
+  animation: fadeInUp 0.6s ease-out 0.6s forwards;
+  transition: opacity 0.2s ease;
+}
+
+.info-link:hover,
+.info-link:active {
+  opacity: 0.8;
 }
 
 .mascot {
