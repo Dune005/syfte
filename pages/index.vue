@@ -16,6 +16,12 @@
       <NuxtLink to="/wie-es-funktioniert" class="info-link">
         Wie funktioniert syfte?
       </NuxtLink>
+
+      <div class="legal-links">
+        <NuxtLink to="/impressum">Impressum</NuxtLink>
+        <span class="separator">|</span>
+        <NuxtLink to="/datenschutz">Datenschutz</NuxtLink>
+      </div>
     </div>
 
     <img src="/images/syfte_Schaf/syfte_Schaf.png" alt="Syfte Maskottchen" class="mascot" />
@@ -23,11 +29,31 @@
 </template>
 
 <script setup>
+import { onMounted } from 'vue'
+
 useHead({
   title: 'Syfte - Sparen leicht gemacht',
   meta: [
     { name: 'description', content: 'Syfte ist eine moderne Web-App für motivierendes Sparen.' }
   ]
+})
+
+// Check if user is already logged in
+onMounted(async () => {
+  try {
+    // Try to fetch user data - if successful, user is logged in
+    const response = await $fetch('/api/users/me', {
+      credentials: 'include'
+    })
+    
+    if (response && response.user) {
+      // User is logged in, redirect to dashboard
+      await navigateTo('/dashboard')
+    }
+  } catch (error) {
+    // User is not logged in, stay on landing page
+    // This is expected behavior, no need to log
+  }
 })
 </script>
 
@@ -142,6 +168,30 @@ useHead({
 .info-link:hover,
 .info-link:active {
   opacity: 0.8;
+}
+
+.legal-links {
+  margin-top: 40px;
+  display: flex;
+  gap: 10px;
+  font-family: 'Lato', sans-serif;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  opacity: 0;
+  animation: fadeInUp 0.6s ease-out 0.7s forwards;
+}
+
+.legal-links a {
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+}
+
+.legal-links a:hover {
+  text-decoration: underline;
+}
+
+.separator {
+  opacity: 0.5;
 }
 
 .mascot {

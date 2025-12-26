@@ -155,6 +155,25 @@
         </div>
       </div>
 
+      <!-- Rechtliches Section -->
+      <div class="settings-section">
+        <h2 class="section-title">Rechtliches</h2>
+        <div class="legal-menu">
+          <NuxtLink to="/agb" class="legal-item">
+            <span>AGB</span>
+            <ChevronRight :size="20" color="#9CA3AF" />
+          </NuxtLink>
+          <NuxtLink to="/impressum" class="legal-item">
+            <span>Impressum</span>
+            <ChevronRight :size="20" color="#9CA3AF" />
+          </NuxtLink>
+          <NuxtLink to="/datenschutz" class="legal-item">
+            <span>Datenschutz</span>
+            <ChevronRight :size="20" color="#9CA3AF" />
+          </NuxtLink>
+        </div>
+      </div>
+
     </div>
 
     <!-- Delete Account Confirmation Modal -->
@@ -189,7 +208,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Trash2, Bell, Flame, Users, FileText, Download } from 'lucide-vue-next'
+import { Trash2, Bell, Flame, Users, FileText, Download, ChevronRight } from 'lucide-vue-next'
 import BottomNavigation from '~/components/BottomNavigation.vue'
 
 // State
@@ -684,6 +703,32 @@ input:checked + .toggle-slider:before {
 .export-buttons {
   display: flex;
   gap: 12px;
+}
+
+/* Legal Menu */
+.legal-menu {
+  display: flex;
+  flex-direction: column;
+}
+
+.legal-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  color: #1E232C;
+  text-decoration: none;
+  border-bottom: 1px solid #F3F4F6;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.legal-item:last-child {
+  border-bottom: none;
+}
+
+.legal-item:hover {
+  opacity: 0.7;
 }
 
 /* Danger Zone */

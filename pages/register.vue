@@ -93,9 +93,25 @@
         </ul>
       </div>
 
+      <!-- AGB Checkbox -->
+      <div class="checkbox-group">
+        <label class="checkbox-label">
+          <input 
+            type="checkbox" 
+            v-model="acceptedTerms" 
+            class="checkbox-input"
+          />
+          <span class="checkbox-text">
+            Ich akzeptiere die <NuxtLink to="/agb">AGB</NuxtLink> und die 
+            <NuxtLink to="/datenschutz">Datenschutzerklärung</NuxtLink>
+          </span>
+        </label>
+        <span v-if="errors.terms" class="error-message">{{ errors.terms }}</span>
+      </div>
+
       <!-- Register Button -->
       <div class="register-button-wrapper">
-        <ButtonPrimary @click="handleRegister" :disabled="isLoading">
+        <ButtonPrimary @click="handleRegister" :disabled="isLoading || !acceptedTerms">
           {{ isLoading ? 'Wird erstellt...' : 'Registrieren' }}
         </ButtonPrimary>
       </div>
@@ -128,6 +144,7 @@ const formData = ref({
   password: ''
 })
 
+const acceptedTerms = ref(false)
 const errors = ref({})
 const isLoading = ref(false)
 
@@ -141,6 +158,12 @@ const passwordRequirements = computed(() => ({
 
 const validateForm = () => {
   errors.value = {}
+  
+  // Check if terms are accepted
+  if (!acceptedTerms.value) {
+    errors.value.terms = 'Du musst die AGB und Datenschutzerklärung akzeptieren'
+    return false
+  }
   
   const validation = RegisterSchema.safeParse(formData.value)
   
@@ -393,6 +416,44 @@ const handleRegister = async () => {
 .password-requirements li.valid::before {
   content: '✓';
   color: #27ae60;
+}
+
+/* Checkbox Group */
+.checkbox-group {
+  margin: 20px 0;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.checkbox-input {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  margin-top: 2px;
+  cursor: pointer;
+  accent-color: #35C2C1;
+}
+
+.checkbox-text {
+  font-family: 'Urbanist', sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #6A707C;
+}
+
+.checkbox-text a {
+  color: #35C2C1;
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.checkbox-text a:hover {
+  color: #2a9e9d;
 }
 
 .register-button-wrapper {

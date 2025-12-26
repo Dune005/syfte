@@ -51,7 +51,13 @@
 
     <!-- Sparaktionen Karussell -->
     <div class="actions-section">
-      <h2 class="section-title">Schnellsparen!</h2>
+      <div class="section-header">
+        <h2 class="section-title">Schnellsparen!</h2>
+        <button class="flex-save-btn" @click="showFlexSaveModal = true">
+          <PiggyBank :size="16" />
+          <span>Flexibel</span>
+        </button>
+      </div>
       <div class="actions-carousel" v-if="actions.length > 0">
         <div class="actions-container">
           <div
@@ -357,6 +363,43 @@
       </div>
     </div>
 
+    <!-- Flex Save Modal -->
+    <div v-if="showFlexSaveModal" class="modal-overlay" @click="closeFlexSaveModal">
+      <div class="flex-save-modal" @click.stop>
+        <h3>Flexibel sparen</h3>
+        <p class="flex-save-subtitle">Trage einen spontanen Sparbetrag ein</p>
+        
+        <div class="flex-save-input-group">
+          <input
+            v-model="flexSaveAmount"
+            type="text"
+            inputmode="decimal"
+            placeholder="0.00"
+            class="flex-save-input"
+            @keyup.enter="submitFlexSave"
+            ref="flexSaveInputRef"
+          />
+          <span class="flex-save-currency">CHF</span>
+        </div>
+
+        <input
+          v-model="flexSaveNote"
+          type="text"
+          placeholder="Notiz (optional)"
+          class="flex-save-note-input"
+        />
+        
+        <p v-if="flexSaveError" class="flex-save-error">{{ flexSaveError }}</p>
+        
+        <div class="flex-save-buttons">
+          <ButtonSecondary @click="closeFlexSaveModal">Abbrechen</ButtonSecondary>
+          <ButtonPrimary @click="submitFlexSave" :disabled="isFlexSaving">
+            {{ isFlexSaving ? 'Wird gespeichert...' : 'Sparen' }}
+          </ButtonPrimary>
+        </div>
+      </div>
+    </div>
+
     <!-- Achievement Popup -->
     <AchievementPopup
       :show="showAchievementPopup"
@@ -396,7 +439,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Plus, Check, CircleFadingPlus, Trash2 } from 'lucide-vue-next'
+import { Plus, Check, CircleFadingPlus, Trash2, PiggyBank } from 'lucide-vue-next'
 import DeleteConfirmModal from '~/components/DeleteConfirmModal.vue'
 import BottomNavigation from '~/components/BottomNavigation.vue'
 
@@ -487,6 +530,14 @@ const goalImageError = ref('')
 const goalFormError = ref('')
 const isSavingGoal = ref(false)
 const isDraggingGoalImage = ref(false)
+
+// Flex Save State
+const showFlexSaveModal = ref(false)
+const flexSaveAmount = ref('')
+const flexSaveNote = ref('')
+const flexSaveError = ref('')
+const isFlexSaving = ref(false)
+const flexSaveInputRef = ref(null)
 
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024 // 5 MB
@@ -729,6 +780,84 @@ const closeAchievementPopup = () => {
 // Close streak popup
 const closeStreakPopup = () => {
   showStreakPopup.value = false
+}
+
+// Flex Save Functions
+const closeFlexSaveModal = () => {
+  showFlexSaveModal.value = false
+  flexSaveAmount.value = ''
+  flexSaveNote.value = ''
+  flexSaveError.value = ''
+}
+
+const submitFlexSave = async () => {
+  if (isFlexSaving.value) return
+  
+  // Parse amount
+  const rawAmount = flexSaveAmount.value.replace(',', '.')
+  const amount = parseFloat(rawAmount)
+  
+  if (isNaN(amount) || amount <= 0) {
+    flexSaveError.value = 'Bitte gib einen gültigen Betrag ein.'
+    return
+  }
+  
+  if (amount > 999999.99) {
+    flexSaveError.value = 'Der Betrag ist zu hoch.'
+    return
+  }
+  
+  flexSaveError.value = ''
+  isFlexSaving.value = true
+  
+  try {
+    // Use quick-add API - saves to favorite goal automatically
+    const response = await $fetch('/api/savings/quick-add', {
+      method: 'POST',
+      body: {
+        amount: amount,
+        note: flexSaveNote.value.trim() || undefined
+      }
+    })
+    
+    if (response.success) {
+      // Update today's savings
+      todaySavings.value = Math.round((todaySavings.value + amount) * 100) / 100
+      
+      // Update goal progress - find the goal that was updated
+      if (response.goal) {
+        const goal = goals.value.find(g => g.id === response.goal.id)
+        if (goal) {
+          goal.current = parseFloat(response.goal.savedChf)
+          goal.isCompleted = response.goal.isCompleted
+        }
+      }
+      
+      // Update streak if available
+      if (response.streak) {
+        userStreak.value = {
+          current: response.streak.current || 0,
+          longest: response.streak.longest || 0
+        }
+      }
+      
+      // Close modal
+      closeFlexSaveModal()
+      
+      // Check for achievements and streak popup
+      if (response.achievements?.newlyUnlocked?.length > 0) {
+        await showAchievementPopups(response.achievements.newlyUnlocked)
+      } else {
+        await checkAndShowStreakPopup()
+      }
+    }
+  } catch (error) {
+    console.error('Fehler beim flexiblen Sparen:', error)
+    const errorMsg = error?.data?.statusMessage || 'Fehler beim Speichern. Bitte versuche es erneut.'
+    flexSaveError.value = errorMsg
+  } finally {
+    isFlexSaving.value = false
+  }
 }
 
 const clearGoalImage = () => {
@@ -1242,6 +1371,38 @@ onBeforeUnmount(() => {
 .actions-section {
   padding: 24px 20px;
   background: #f8f9fa;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0;
+}
+
+.flex-save-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #35C2C1 0%, #2BA39E 100%);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(53, 194, 193, 0.3);
+}
+
+.flex-save-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(53, 194, 193, 0.4);
+}
+
+.flex-save-btn:active {
+  transform: scale(0.98);
 }
 
 .actions-carousel {
@@ -1826,6 +1987,111 @@ onBeforeUnmount(() => {
 
 .goal-modal-cancel:hover {
   text-decoration: underline;
+}
+
+/* Flex Save Modal */
+.flex-save-modal {
+  background: white;
+  border-radius: 20px;
+  max-width: 340px;
+  width: 100%;
+  padding: 28px 24px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: modalSlideIn 0.3s ease-out;
+  text-align: center;
+}
+
+.flex-save-modal h3 {
+  font-size: 24px;
+  font-weight: 800;
+  color: #1E232C;
+  margin: 0 0 8px 0;
+}
+
+.flex-save-subtitle {
+  font-size: 14px;
+  color: #666;
+  margin: 0 0 24px 0;
+}
+
+.flex-save-input-group {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.flex-save-input {
+  width: 100%;
+  height: 72px;
+  border-radius: 16px;
+  border: 2px solid #E4E9F2;
+  background: #F6F8FB;
+  padding: 0 70px 0 20px;
+  font-size: 32px;
+  font-weight: 800;
+  color: #1E232C;
+  text-align: center;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+}
+
+.flex-save-input:focus {
+  outline: none;
+  border-color: #35C2C1;
+  box-shadow: 0 0 0 3px rgba(53, 194, 193, 0.2);
+}
+
+.flex-save-input::placeholder {
+  color: #CAD3E0;
+}
+
+.flex-save-currency {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  font-weight: 700;
+  color: #8A97A6;
+}
+
+.flex-save-note-input {
+  width: 100%;
+  height: 52px;
+  border-radius: 12px;
+  border: 1px solid #E4E9F2;
+  background: #F6F8FB;
+  padding: 0 16px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #1E232C;
+  margin-bottom: 16px;
+  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+.flex-save-note-input:focus {
+  outline: none;
+  border-color: #35C2C1;
+}
+
+.flex-save-note-input::placeholder {
+  color: #8A97A6;
+}
+
+.flex-save-error {
+  font-size: 13px;
+  font-weight: 500;
+  color: #D64848;
+  margin: -8px 0 16px 0;
+}
+
+.flex-save-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.flex-save-buttons button {
+  flex: 1;
 }
 
 .sr-only {
