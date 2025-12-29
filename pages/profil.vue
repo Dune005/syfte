@@ -1,31 +1,23 @@
 <template>
   <div class="profile-page">
-    <!-- Header -->
+    <!-- Header mit integriertem Profilbild -->
     <div class="profile-header">
-      <div class="profile-header-bg"></div>
-      <div class="header-content">
-        <h1>Mein Profil</h1>
+      <div class="profile-header-bg">
+        <!-- Decorative Elements -->
+        <div class="header-decoration circle-1"></div>
+        <div class="header-decoration circle-2"></div>
+        <div class="header-decoration circle-3"></div>
       </div>
-    </div>
-
-    <!-- Loading State -->
-    <div v-if="isLoading" class="loading-state">
-      <div class="spinner"></div>
-      <p>Lade Profil...</p>
-    </div>
-
-    <!-- Profile Content -->
-    <template v-else>
-      <!-- Avatar Section -->
-      <div class="avatar-section">
-        <div class="avatar-wrapper">
+      <div class="header-content">
+        <!-- Avatar im Header -->
+        <div class="header-avatar">
           <img
             class="avatar-img"
             :src="profileImagePreview || currentUser?.profileImageUrl || '/images/syfte_Schaf/syfte_Schaf_happy.png'"
             alt="Profilbild"
           />
           <button type="button" class="edit-overlay" @click="triggerProfileImageSelect" aria-label="Profilbild bearbeiten">
-            <Camera :size="20" color="white" />
+            <Camera :size="18" color="white" />
           </button>
           <input
             ref="profileImageInput"
@@ -36,14 +28,28 @@
           />
         </div>
         
-        <div class="user-info">
+        <!-- User Info -->
+        <div class="header-user-info">
           <p class="user-title">{{ userProfile.title || 'Spar-Anfänger' }}</p>
-          <h2 class="user-name">{{ currentUser?.firstName || '' }} {{ currentUser?.lastName || '' }}</h2>
+          <h1 class="user-name">{{ currentUser?.firstName || '' }} {{ currentUser?.lastName || '' }}</h1>
         </div>
-
-        <p v-if="profileError" class="profile-message error">{{ profileError }}</p>
-        <p v-if="profileSuccess" class="profile-message success">{{ profileSuccess }}</p>
       </div>
+    </div>
+
+    <!-- Messages -->
+    <div v-if="profileError || profileSuccess" class="message-container">
+      <p v-if="profileError" class="profile-message error">{{ profileError }}</p>
+      <p v-if="profileSuccess" class="profile-message success">{{ profileSuccess }}</p>
+    </div>
+
+    <!-- Loading State -->
+    <div v-if="isLoading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Lade Profil...</p>
+    </div>
+
+    <!-- Profile Content -->
+    <template v-else>
 
       <!-- Stats Section -->
       <div class="stats-section">
@@ -393,8 +399,7 @@ onBeforeUnmount(() => {
 /* Header */
 .profile-header {
   position: relative;
-  height: 140px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .profile-header-bg {
@@ -402,26 +407,121 @@ onBeforeUnmount(() => {
   top: 0;
   left: 0;
   right: 0;
-  height: 180px;
-  background: linear-gradient(135deg, #35C2C1 0%, #2BA39E 100%);
-  border-radius: 0 0 40px 40px;
+  height: 200px;
+  background: linear-gradient(135deg, #35C2C1 0%, #2BA39E 50%, #228B85 100%);
+  border-radius: 0 0 50px 50px;
+}
+
+/* Decorative Elements */
+.header-decoration {
+  position: absolute;
+  border-radius: 50%;
+}
+
+.header-decoration.circle-1 {
+  width: 200px;
+  height: 200px;
+  top: -80px;
+  right: -60px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.header-decoration.circle-2 {
+  width: 120px;
+  height: 120px;
+  top: 60px;
+  left: -40px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.header-decoration.circle-3 {
+  width: 80px;
+  height: 80px;
+  top: 100px;
+  right: 30%;
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .header-content {
   position: relative;
   z-index: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 16px 20px;
-  padding-top: calc(16px + env(safe-area-inset-top, 0px));
+  padding: 24px 20px 40px;
+  padding-top: calc(24px + env(safe-area-inset-top, 0px));
+  gap: 12px;
 }
 
-.header-content h1 {
-  font-size: 20px;
-  font-weight: 700;
+/* Avatar im Header */
+.header-avatar {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  overflow: visible;
+}
+
+.header-avatar .avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 4px solid white;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  background: white;
+}
+
+.header-avatar .edit-overlay {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #35C2C1 0%, #2BA39E 100%);
+  border: 3px solid white;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.header-avatar .edit-overlay:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+/* User Info im Header */
+.header-user-info {
+  text-align: center;
+}
+
+.header-user-info .user-title {
+  font-family: 'Urbanist', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0 0 4px 0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.header-user-info .user-name {
+  font-family: 'Lato', sans-serif;
+  font-size: 26px;
+  font-weight: 900;
   color: white;
   margin: 0;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Messages Container */
+.message-container {
+  padding: 0 20px;
+  margin-top: 16px;
 }
 
 /* Loading State */
@@ -453,83 +553,13 @@ onBeforeUnmount(() => {
   font-size: 16px;
 }
 
-/* Avatar Section */
-.avatar-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: -50px;
-  padding: 0 20px 24px;
-  position: relative;
-  z-index: 2;
-}
-
-.avatar-wrapper {
-  position: relative;
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 4px solid white;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  background: white;
-}
-
-.avatar-wrapper .avatar-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.avatar-wrapper .edit-overlay {
-  position: absolute;
-  right: 4px;
-  bottom: 4px;
-  background: #35C2C1;
-  border: 3px solid white;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: transform 0.2s ease, background 0.2s ease;
-}
-
-.avatar-wrapper .edit-overlay:hover {
-  transform: scale(1.1);
-  background: #2BA39E;
-}
-
-.user-info {
-  text-align: center;
-  margin-top: 16px;
-}
-
-.user-title {
-  font-size: 14px;
-  font-weight: 500;
-  color: #35C2C1;
-  margin: 0 0 4px 0;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.user-name {
-  font-size: 24px;
-  font-weight: 800;
-  color: #1E232C;
-  margin: 0;
-}
-
+/* Profile Messages */
 .profile-message {
-  margin-top: 12px;
-  padding: 8px 16px;
-  border-radius: 8px;
+  padding: 12px 16px;
+  border-radius: 12px;
   font-size: 14px;
   font-weight: 500;
+  text-align: center;
 }
 
 .profile-message.error {
@@ -563,7 +593,7 @@ onBeforeUnmount(() => {
 
 /* Stats Section */
 .stats-section {
-  padding: 0 20px 24px;
+  padding: 24px 20px;
 }
 
 .stats-grid {

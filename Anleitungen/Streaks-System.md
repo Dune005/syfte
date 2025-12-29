@@ -318,6 +318,18 @@ for (let i = 0; i < 7; i++) {
 - Logs prüfen: `server/api/savings/add-with-action.post.ts`
 - DB prüfen: `lastSaveDate` korrekt gesetzt?
 
+### Problem: Alte Streak-Zahl wird nach Tagen ohne Sparen angezeigt
+**Beschreibung:**
+- User spart mehrere Tage nicht
+- Dashboard zeigt immer noch "+1 Tage Streak" (alte Zahl)
+
+**Lösung (seit Dez 2024):**
+- **Validierte Streak-Abfrage** `getValidatedStreak()` prüft bei jedem Dashboard-Aufruf:
+  - Wurde heute oder gestern gespart?
+  - Wenn ja → Streak ist aktiv, zeige currentCount
+  - Wenn nein → Streak ist unterbrochen, lösche DB-Eintrag, zeige 0
+- Dashboard zeigt nun automatisch "Starte deine Streak!" wenn unterbrochen
+
 ### Problem: Wochenansicht zeigt falsche Tage
 **Mögliche Ursachen:**
 - Timezone-Probleme (Server vs. Client)

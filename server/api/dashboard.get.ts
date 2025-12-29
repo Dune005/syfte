@@ -2,6 +2,7 @@ import { eq, and, gte, lte, desc, isNull } from 'drizzle-orm';
 import { db } from '../utils/database/connection';
 import { users, goals, savings, actions, streaks } from '../utils/database/schema';
 import { verifyJWT, getAuthCookie } from '../utils/auth';
+import { getValidatedStreak } from '../utils/streaks';
 
 export default defineEventHandler(async (event) => {
   // Only allow GET requests
@@ -109,15 +110,8 @@ export default defineEventHandler(async (event) => {
       return sum + parseFloat(goal.savedChf.toString());
     }, 0);
 
-    // 4. Get current streak (nur noch 1 Eintrag pro User)
-    const [currentStreak] = await db
-      .select({
-        currentCount: streaks.currentCount,
-        longestCount: streaks.longestCount
-      })
-      .from(streaks)
-      .where(eq(streaks.userId, payload.userId))
-      .limit(1);
+    // 4. Get validated current streak (prüft ob noch aktiv, setzt auf 0 wenn unterbrochen)
+    const validatedStreak = await getValidatedStreak(payload.userId);
 
     // 5. Get available actions for quick add
     const availableActions = await db
@@ -151,12 +145,9 @@ export default defineEventHandler(async (event) => {
             ? Math.round((totalGoalsSaved / totalGoalsTarget) * 100 * 100) / 100 
             : 0
         },
-        streak: currentStreak ? {
-          current: currentStreak.currentCount,
-          longest: currentStreak.longestCount
-        } : {
-          current: 0,
-          longest: 0
+        streak: {
+          current: validatedStreak.current,
+          longest: validatedStreak.longest
         },
         quickActions: availableActions
       }

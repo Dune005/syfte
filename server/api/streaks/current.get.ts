@@ -2,6 +2,7 @@ import { eq, and, gte, sql } from 'drizzle-orm';
 import { db } from '../../utils/database/connection';
 import { streaks, savings } from '../../utils/database/schema';
 import { verifyJWT, getAuthCookie } from '../../utils/auth';
+import { getValidatedStreak } from '../../utils/streaks';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -26,17 +27,13 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    // Get current streak for the user (nur noch 1 Eintrag pro User)
-    const [userStreak] = await db
-      .select()
-      .from(streaks)
-      .where(eq(streaks.userId, payload.userId))
-      .limit(1);
+    // Get validated current streak (prüft ob noch aktiv, setzt auf 0 wenn unterbrochen)
+    const validatedStreak = await getValidatedStreak(payload.userId);
 
-    // Werte aus dem einen Streak-Eintrag (oder 0 falls keiner existiert)
-    const totalCurrentStreak = userStreak?.currentCount || 0;
-    const totalLongestStreak = userStreak?.longestCount || 0;
-    const currentGoalId = userStreak?.goalId || null;
+    // Werte aus dem validierten Streak
+    const totalCurrentStreak = validatedStreak.current;
+    const totalLongestStreak = validatedStreak.longest;
+    const currentGoalId = validatedStreak.goalId;
 
     // Letzten 7 Tage berechnen für Wochendarstellung
     const today = new Date();
@@ -90,7 +87,7 @@ export default defineEventHandler(async (event) => {
         longest: totalLongestStreak,
         weekData, // Boolean-Array: [Mo, Di, Mi, Do, Fr, Sa, So]
         currentGoalId, // ID des Ziels, für das heute gespart wurde
-        lastSaveDate: userStreak?.lastSaveDate || null
+        lastSaveDate: validatedStreak.lastSaveDate
       }
     };
 

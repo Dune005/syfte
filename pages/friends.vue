@@ -2,8 +2,18 @@
   <div class="friends-page">
     <!-- Header -->
     <div class="header">
+      <div class="header-background">
+        <!-- Decorative Elements -->
+        <div class="header-decoration circle-1"></div>
+        <div class="header-decoration circle-2"></div>
+        <div class="header-decoration circle-3"></div>
+      </div>
       <div class="header-content">
+        <div class="header-icon">
+          <Users :size="28" color="white" />
+        </div>
         <h1>Freunde</h1>
+        <p class="header-subtitle">Zusammen sparen macht mehr Spass!</p>
       </div>
     </div>
 
@@ -424,39 +434,91 @@ onMounted(async () => {
 
 /* Header */
 .header {
-  background: linear-gradient(135deg, #35C2C1 0%, #2BA39E 100%);
-  padding: max(env(safe-area-inset-top, 0px), 20px) 20px 20px 20px;
-  border-radius: 0 0 50px 50px;
   position: relative;
+  height: 180px;
   overflow: hidden;
 }
 
-.header::before {
-  content: '';
+.header-background {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.1);
+  height: 220px;
+  background: linear-gradient(135deg, #35C2C1 0%, #2BA39E 50%, #228B85 100%);
   border-radius: 0 0 50px 50px;
 }
 
+/* Decorative Elements */
+.header-decoration {
+  position: absolute;
+  border-radius: 50%;
+}
+
+.header-decoration.circle-1 {
+  width: 200px;
+  height: 200px;
+  top: -80px;
+  right: -60px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.header-decoration.circle-2 {
+  width: 120px;
+  height: 120px;
+  top: 60px;
+  left: -40px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.header-decoration.circle-3 {
+  width: 80px;
+  height: 80px;
+  bottom: 20px;
+  right: 30%;
+  background: rgba(255, 255, 255, 0.05);
+}
+
 .header-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  padding-top: calc(20px + env(safe-area-inset-top, 0px));
+  gap: 8px;
+}
+
+.header-icon {
+  width: 56px;
+  height: 56px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
-  z-index: 1;
+  margin-bottom: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .header h1 {
   font-family: 'Lato', sans-serif;
   font-weight: 900;
-  font-size: 32px;
+  font-size: 28px;
   color: white;
   margin: 0;
-  line-height: 1.2;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.header-subtitle {
+  font-family: 'Urbanist', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0;
 }
 
 /* Section */

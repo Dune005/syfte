@@ -172,3 +172,87 @@ export async function getCurrentStreak(userId: number): Promise<{
     };
   }
 }
+
+/**
+ * VALIDIERTE Streak-Abfrage:
+ * Prüft ob der Streak noch gültig ist (heute oder gestern gespart).
+ * Wenn nicht, wird der Streak auf 0 gesetzt (in der DB gelöscht).
+ * Diese Funktion sollte beim Dashboard-Aufruf verwendet werden.
+ */
+export async function getValidatedStreak(userId: number): Promise<{
+  current: number;
+  longest: number;
+  lastSaveDate: Date | null;
+  goalId: number | null;
+  wasReset: boolean;
+}> {
+  try {
+    const [streakRecord] = await db
+      .select({
+        id: streaks.id,
+        currentCount: streaks.currentCount,
+        longestCount: streaks.longestCount,
+        lastSaveDate: streaks.lastSaveDate,
+        goalId: streaks.goalId
+      })
+      .from(streaks)
+      .where(eq(streaks.userId, userId))
+      .limit(1);
+
+    // Kein Streak vorhanden → 0
+    if (!streakRecord) {
+      return {
+        current: 0,
+        longest: 0,
+        lastSaveDate: null,
+        goalId: null,
+        wasReset: false
+      };
+    }
+
+    // Prüfe, ob der Streak noch gültig ist
+    const today = new Date();
+    const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const yesterday = new Date(todayDate);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const lastSave = streakRecord.lastSaveDate;
+    const wasToday = isSameDay(lastSave, todayDate);
+    const wasYesterday = isSameDay(lastSave, yesterday);
+
+    // Wenn heute oder gestern gespart wurde → Streak ist noch aktiv
+    if (wasToday || wasYesterday) {
+      return {
+        current: streakRecord.currentCount,
+        longest: streakRecord.longestCount,
+        lastSaveDate: streakRecord.lastSaveDate,
+        goalId: streakRecord.goalId,
+        wasReset: false
+      };
+    }
+
+    // Streak ist unterbrochen (mehr als 1 Tag ohne Sparen)
+    // → Lösche den Streak-Eintrag aus der Datenbank
+    await db
+      .delete(streaks)
+      .where(eq(streaks.id, streakRecord.id));
+
+    return {
+      current: 0,
+      longest: streakRecord.longestCount, // Längster Streak bleibt erhalten für Anzeige
+      lastSaveDate: null,
+      goalId: null,
+      wasReset: true
+    };
+
+  } catch (error) {
+    console.error('Error getting validated streak:', error);
+    return {
+      current: 0,
+      longest: 0,
+      lastSaveDate: null,
+      goalId: null,
+      wasReset: false
+    };
+  }
+}
