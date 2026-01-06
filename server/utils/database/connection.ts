@@ -10,24 +10,15 @@ if (!databaseUrl) {
 
 const url = new URL(databaseUrl);
 
-// Create connection pool - optimized for production
+// Create connection pool - working configuration
 const connection = mysql.createPool({
   host: url.hostname,
   database: url.pathname.substring(1), // Remove leading /
   user: url.username,
   password: url.password,
   charset: 'utf8mb4',
-  // Production-optimierte Pool-Größe
-  connectionLimit: process.env.NODE_ENV === 'production' ? 20 : 10,
+  connectionLimit: 10,
   queueLimit: 0,
-  // Performance-Optimierungen
-  enableKeepAlive: true,
-  keepAliveInitialDelay: 10000,
-  // Connection-Timeout Settings
-  connectTimeout: 10000,
-  waitForConnections: true,
-  maxIdle: 10,
-  idleTimeout: 60000
 });
 
 export const db = drizzle(connection, { schema, mode: 'default' });
