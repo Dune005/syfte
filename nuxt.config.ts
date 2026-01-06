@@ -166,7 +166,43 @@ export default defineNuxtConfig({
   // Nitro-Konfiguration für Vercel
   nitro: {
     preset: 'vercel',
+    // Prerender statische Seiten für bessere Performance
+    prerender: {
+      routes: ['/login', '/register', '/wie-es-funktioniert', '/impressum', '/datenschutz', '/agb'],
+      crawlLinks: false
+    },
+    // Compression aktivieren
+    compressPublicAssets: true,
     routeRules: {
+      // Statische Marketing-Seiten: SWR Cache (1 Stunde)
+      '/': { swr: 3600 },
+      '/wie-es-funktioniert': { prerender: true },
+      '/impressum': { prerender: true },
+      '/datenschutz': { prerender: true },
+      '/agb': { prerender: true },
+      
+      // Auth-Seiten: Keine Cache (dynamisch)
+      '/login': { prerender: true },
+      '/register': { prerender: true },
+      
+      // Dashboard & dynamische Seiten: ISR mit kurzer Lifetime
+      '/dashboard': { swr: 60 }, // 1 Min Cache für schnellere Loads
+      '/profil': { swr: 300 }, // 5 Min Cache
+      '/settings': { swr: 300 },
+      '/friends': { swr: 120 }, // 2 Min Cache
+      
+      // API Routes: Kürzere Cache-Zeiten
+      '/api/dashboard': { cache: { maxAge: 60 } }, // 1 Min
+      '/api/goals/**': { cache: { maxAge: 30 } }, // 30 Sek
+      '/api/savings/**': { cache: { maxAge: 30 } },
+      '/api/streaks/**': { cache: { maxAge: 120 } }, // 2 Min
+      '/api/analytics/**': { cache: { maxAge: 300 } }, // 5 Min
+      
+      // Assets: Langzeit-Cache (1 Jahr)
+      '/_nuxt/**': { headers: { 'cache-control': 'public, max-age=31536000, immutable' } },
+      '/images/**': { headers: { 'cache-control': 'public, max-age=31536000' } },
+      
+      // Security Headers für alle Routes
       '/**': {
         headers: {
           'X-Content-Type-Options': 'nosniff',
@@ -177,6 +213,34 @@ export default defineNuxtConfig({
         }
       }
     }
+  },
+
+  // Vite Build-Optimierungen
+  vite: {
+    build: {
+      // Rollup-Optionen für besseres Code-Splitting
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            // ApexCharts in separates Chunk (wird nur auf Dashboard geladen)
+            'apexcharts': ['apexcharts', 'vue3-apexcharts'],
+            // Lucide Icons separieren
+            'icons': ['lucide-vue-next']
+          }
+        }
+      }
+    },
+    // CSS Code-Splitting aktivieren
+    css: {
+      devSourcemap: false
+    }
+  },
+
+  // Experimental Features für bessere Performance
+  experimental: {
+    payloadExtraction: false, // Schnelleres SSR
+    renderJsonPayloads: true,
+    componentIslands: true // Selective Hydration
   },
 
   /**
