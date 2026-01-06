@@ -11,10 +11,6 @@ Willkommen im Anleitungen-Verzeichnis! Hier findest du alle wichtigen Dokumentat
 - **[Sicherheits-Checkliste.md](./Sicherheits-Checkliste.md)**  
   Schnelle Referenz für Security Commands und Troubleshooting
 
-### 📧 Email & Kommunikation
-- **[Email-Konfiguration.md](./Email-Konfiguration.md)**  
-  Postmark-Setup, Environment Variables und Troubleshooting
-
 ## 🎯 Zweck
 
 Diese Anleitungen dienen dazu:

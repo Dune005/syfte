@@ -47,11 +47,6 @@
         <p v-if="fieldErrors.password" class="field-error" role="alert">{{ fieldErrors.password }}</p>
       </div>
 
-      <!-- Forgot Password -->
-      <div class="forgot-password">
-        <NuxtLink to="/forgot-password">Passwort vergessen?</NuxtLink>
-      </div>
-
       <!-- Login Button -->
       <div class="login-button-wrapper">
         <ButtonPrimary :disabled="loading" @click="onLogin">
@@ -320,28 +315,6 @@ async function onLogin() {
   line-height: 14px;
   color: #e74c3c;
   margin-top: 4px;
-}
-
-
-
-.forgot-password {
-  text-align: right;
-  margin-top: 14px;
-  margin-bottom: 30px;
-}
-
-.forgot-password a {
-  font-family: 'Urbanist', sans-serif;
-  font-weight: 600;
-  font-size: 14px;
-  line-height: 17px;
-  color: #6A707C;
-  text-decoration: none;
-  transition: color 0.3s ease;
-}
-
-.forgot-password a:hover {
-  color: #35C2C1;
 }
 
 .login-button-wrapper {

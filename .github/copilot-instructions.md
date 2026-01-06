@@ -1,11 +1,11 @@
 # Project Overview
-Syfte ist eine moderne Spar-App basierend auf Nuxt.js, die es Nutzern ermöglicht, Sparziele zu setzen, Fortschritte zu verfolgen und mit Freunden gemeinsam zu sparen. Die App bietet Features wie Achievements, Streaks, Push-Benachrichtigungen und Datenexport. Das Projekt befindet sich in der initialen Entwicklungsphase und wird als Full-Stack-Anwendung mit modernen Web-Technologien entwickelt.
+Syfte ist eine moderne Spar-App basierend auf Nuxt.js, die es Nutzern ermöglicht, Sparziele zu setzen, Fortschritte zu verfolgen und mit Freunden gemeinsam zu sparen. Die App bietet Features wie Achievements, Streaks und Datenexport. Das Projekt befindet sich in der initialen Entwicklungsphase und wird als Full-Stack-Anwendung mit modernen Web-Technologien entwickelt.
 
 # Tech Stack
 ## Backend
 - Frameworks/libraries: Nuxt.js 4 (Server-Side Rendering & API Routes)
 - Data store(s) and ORM: MariaDB (Schema definiert in db/syfte.sql)
-- APIs/services: Nuxt Server API, Push-Benachrichtigungen (VAPID via web-push), OAuth (Google)
+- APIs/services: Nuxt Server API, OAuth (Google)
 - Runtime/hosting: Node.js
 
 ## Frontend
@@ -37,7 +37,6 @@ Syfte ist eine moderne Spar-App basierend auf Nuxt.js, die es Nutzern ermöglich
 ## Hosting & DevOps
 - Hosting: Vercel, eigener Webserver
 - Code Hosting: GitHub
-- Push Notifications: Web Push (VAPID) via web-push Node-Package
 
 # Coding Guidelines
 - Typing/strictness: TypeScript mit strengen Typen
@@ -87,7 +86,6 @@ Syfte ist eine moderne Spar-App basierend auf Nuxt.js, die es Nutzern ermöglich
 - `middleware/` - Nuxt Middleware
 - `plugins/` - Nuxt Plugins
 - `server/` - Server API Routes
-- `scripts/` - Build-Scripts (z.B. `generate-pwa-icons.mjs`)
 - `assets/` - Statische Assets (CSS, Bilder)
 - `public/` - Öffentliche statische Dateien (inkl. PWA-Icons)
 - `db/` - Datenbankschemas und Migrationen
@@ -108,7 +106,6 @@ Syfte ist eine moderne Spar-App basierend auf Nuxt.js, die es Nutzern ermöglich
 - `npm run build` — Build the application for production
 - `npm run preview` — Preview production build locally
 - `npm run postinstall` — Generate Nuxt types
-- `node scripts/generate-pwa-icons.mjs` — Regeneriere PWA-Icons aus Logo
 
 ## Development Server
 - Local: http://localhost:3200 (Standard-Port für Syfte)
@@ -148,7 +145,6 @@ Syfte ist eine moderne Spar-App basierend auf Nuxt.js, die es Nutzern ermöglich
 - **Sparaktionen:** Vordefinierte Aktivitäten zum Geld sparen (z.B. "Kaffee ausgelassen")
 - **Achievements:** Auszeichnungen für Meilensteine (Streaks, Sparsummen)
 - **Freundschaften:** Soziales Sparen mit Freunden (pending/accepted/blocked Status)
-- **Push-Benachrichtigungen:** Tägliche Erinnerungen via Web Push (VAPID)
 - **Datenexport:** CSV/JSON Export für Transaktionen und Sparziele
 - **Multi-Auth:** Password und Google OAuth Unterstützung
 

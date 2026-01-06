@@ -164,13 +164,11 @@ export default defineNuxtConfig({
     jwtSecret: process.env.JWT_SECRET,
     dbPassword: process.env.DB_PASSWORD,
     googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    vapidPrivateKey: process.env.VAPID_PRIVATE_KEY,
     
     // Public keys (exposed to client-side)
     public: {
       appName: 'Syfte',
       appUrl: process.env.APP_URL || 'http://localhost:3200',
-      vapidPublicKey: process.env.VAPID_PUBLIC_KEY,
       googleClientId: process.env.GOOGLE_CLIENT_ID,
     }
   }

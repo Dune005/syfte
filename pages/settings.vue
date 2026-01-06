@@ -67,86 +67,6 @@
         </div>
       </div>
 
-      <!-- Notifications Section -->
-      <div class="settings-section">
-        <h2 class="section-title">Benachrichtigungen</h2>
-        
-        <!-- Push Notifications Toggle -->
-        <div class="setting-item toggle-item">
-          <div class="toggle-label">
-            <Bell :size="20" color="#35C2C1" />
-            <div>
-              <strong>Push-Benachrichtigungen</strong>
-              <p class="toggle-description">Erhalte Erinnerungen zum Sparen</p>
-            </div>
-          </div>
-          <label class="toggle-switch">
-            <input 
-              type="checkbox" 
-              v-model="notificationSettings.pushEnabled" 
-              @change="handlePushToggle"
-            />
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-
-        <!-- Notification Time -->
-        <div v-if="notificationSettings.pushEnabled" class="setting-item">
-          <label>Benachrichtigungszeit</label>
-          <div class="time-picker">
-            <select v-model="notificationSettings.dailyPushHour" @change="updateNotifications" class="time-select">
-              <option v-for="h in 24" :key="h-1" :value="h-1">{{ String(h-1).padStart(2, '0') }}</option>
-            </select>
-            <span class="time-separator">:</span>
-            <select v-model="notificationSettings.dailyPushMinute" @change="updateNotifications" class="time-select">
-              <option :value="0">00</option>
-              <option :value="15">15</option>
-              <option :value="30">30</option>
-              <option :value="45">45</option>
-            </select>
-            <span class="time-label">Uhr</span>
-          </div>
-        </div>
-
-        <!-- Streak Reminders -->
-        <div class="setting-item toggle-item">
-          <div class="toggle-label">
-            <Flame :size="20" color="#F59E0B" />
-            <div>
-              <strong>Streak-Erinnerungen</strong>
-              <p class="toggle-description">Benachrichtigung bei Streak-Gefahr</p>
-            </div>
-          </div>
-          <label class="toggle-switch">
-            <input 
-              type="checkbox" 
-              v-model="notificationSettings.streakRemindersEnabled" 
-              @change="updateNotifications"
-            />
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-
-        <!-- Friend Requests -->
-        <div class="setting-item toggle-item">
-          <div class="toggle-label">
-            <Users :size="20" color="#8B5CF6" />
-            <div>
-              <strong>Freundschaftsanfragen</strong>
-              <p class="toggle-description">Benachrichtigung bei neuen Anfragen</p>
-            </div>
-          </div>
-          <label class="toggle-switch">
-            <input 
-              type="checkbox" 
-              v-model="notificationSettings.friendRequestsEnabled" 
-              @change="updateNotifications"
-            />
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-      </div>
-
       <!-- Export Section -->
       <div class="settings-section">
         <h2 class="section-title">Datenexport</h2>
@@ -220,7 +140,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Trash2, Bell, Flame, Users, FileText, Download, ChevronRight, Settings } from 'lucide-vue-next'
+import { Trash2, FileText, Download, ChevronRight, Settings } from 'lucide-vue-next'
 import BottomNavigation from '~/components/BottomNavigation.vue'
 
 // State
@@ -238,32 +158,9 @@ const passwordData = ref({
   confirm: ''
 })
 
-const notificationSettings = ref({
-  pushEnabled: false,
-  dailyPushHour: 12,
-  dailyPushMinute: 0,
-  streakRemindersEnabled: false,
-  friendRequestsEnabled: false
-})
-
 // Load settings
 const loadSettings = async () => {
-  try {
-    const response: any = await $fetch('/api/users/settings')
-    const settings = response.settings
-    notificationSettings.value = {
-      pushEnabled: settings.pushEnabled ?? false,
-      dailyPushHour: settings.dailyPushHour ?? 12,
-      dailyPushMinute: settings.dailyPushMinute ?? 0,
-      streakRemindersEnabled: settings.streakRemindersEnabled ?? false,
-      friendRequestsEnabled: settings.friendRequestsEnabled ?? false
-    }
-  } catch (error) {
-    console.error('Failed to load settings:', error)
-    showMessage('Fehler beim Laden der Einstellungen', 'error')
-  } finally {
-    isLoading.value = false
-  }
+  isLoading.value = false
 }
 
 // Change password
@@ -299,42 +196,6 @@ const changePassword = async () => {
     showMessage(error.data?.statusMessage || 'Fehler beim Ändern des Passworts', 'error')
   } finally {
     isSaving.value = false
-  }
-}
-
-// Handle push notification toggle - show permission prompt when enabling
-const handlePushToggle = async () => {
-  if (notificationSettings.value.pushEnabled) {
-    // User wants to enable push notifications - show prompt
-    const { subscribe } = usePushNotifications()
-    const success = await subscribe()
-    
-    if (success) {
-      // Successfully subscribed, enable all related notifications
-      notificationSettings.value.streakRemindersEnabled = true
-      notificationSettings.value.friendRequestsEnabled = true
-      await updateNotifications()
-    } else {
-      // Failed to subscribe, revert toggle
-      notificationSettings.value.pushEnabled = false
-      showMessage('Push-Benachrichtigungen konnten nicht aktiviert werden', 'error')
-    }
-  } else {
-    // User disabled push notifications
-    await updateNotifications()
-  }
-}
-
-// Update notifications
-const updateNotifications = async () => {
-  try {
-    await $fetch('/api/users/settings', {
-      method: 'PUT',
-      body: notificationSettings.value
-    })
-    showMessage('Benachrichtigungseinstellungen aktualisiert', 'success')
-  } catch (error: any) {
-    showMessage(error.data?.statusMessage || 'Fehler beim Speichern', 'error')
   }
 }
 
@@ -665,118 +526,6 @@ onMounted(() => {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
-}
-
-/* Toggle Switch */
-.toggle-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px;
-  background: #F9FAFB;
-  border-radius: 12px;
-}
-
-.toggle-label {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  flex: 1;
-}
-
-.toggle-label strong {
-  display: block;
-  font-size: 15px;
-  color: #1E232C;
-  margin-bottom: 2px;
-}
-
-.toggle-description {
-  font-size: 13px;
-  color: #6B7280;
-  margin: 0;
-}
-
-.toggle-switch {
-  position: relative;
-  display: inline-block;
-  width: 50px;
-  height: 28px;
-  flex-shrink: 0;
-}
-
-.toggle-switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.toggle-slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #D1D5DB;
-  transition: 0.3s;
-  border-radius: 28px;
-}
-
-.toggle-slider:before {
-  position: absolute;
-  content: "";
-  height: 22px;
-  width: 22px;
-  left: 3px;
-  bottom: 3px;
-  background-color: white;
-  transition: 0.3s;
-  border-radius: 50%;
-}
-
-input:checked + .toggle-slider {
-  background-color: #35C2C1;
-}
-
-input:checked + .toggle-slider:before {
-  transform: translateX(22px);
-}
-
-/* Time Picker */
-.time-picker {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.time-select {
-  padding: 10px 14px;
-  border: 2px solid #E5E7EB;
-  border-radius: 10px;
-  font-size: 16px;
-  font-weight: 600;
-  font-family: 'Urbanist', sans-serif;
-  background: white;
-  cursor: pointer;
-  width: 80px;
-}
-
-.time-select:focus {
-  outline: none;
-  border-color: #35C2C1;
-}
-
-.time-separator {
-  font-size: 20px;
-  font-weight: 600;
-  color: #374151;
-}
-
-.time-label {
-  font-size: 15px;
-  color: #6B7280;
-  margin-left: 4px;
 }
 
 /* Export Buttons */

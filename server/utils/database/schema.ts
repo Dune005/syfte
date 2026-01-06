@@ -32,33 +32,7 @@ export const authIdentities = mysqlTable('auth_identities', {
 export const userSettings = mysqlTable('user_settings', {
   userId: bigint('user_id', { mode: 'number' }).primaryKey(),
   timezone: varchar('timezone', { length: 64 }).notNull().default('Europe/Zurich'),
-  dailyPushHour: tinyint('daily_push_hour').notNull().default(12),
-  dailyPushMinute: tinyint('daily_push_minute').notNull().default(0),
-  locale: varchar('locale', { length: 16 }).notNull().default('de-CH'),
-  pushEnabled: tinyint('push_enabled').notNull().default(0),
-  streakRemindersEnabled: tinyint('streak_reminders_enabled').notNull().default(0),
-  friendRequestsEnabled: tinyint('friend_requests_enabled').notNull().default(0)
-});
-
-// Push subscriptions for notifications
-export const pushSubscriptions = mysqlTable('push_subscriptions', {
-  id: bigint('id', { mode: 'number' }).primaryKey().autoincrement(),
-  userId: bigint('user_id', { mode: 'number' }).notNull(),
-  endpoint: text('endpoint').notNull(),
-  p256dh: text('p256dh').notNull(),
-  authKey: text('auth_key').notNull(),
-  createdAt: datetime('created_at').notNull().default(new Date()),
-  lastUsedAt: datetime('last_used_at')
-});
-
-// Password reset tokens for "forgot password" functionality
-export const passwordResets = mysqlTable('password_resets', {
-  id: bigint('id', { mode: 'number' }).primaryKey().autoincrement(),
-  userId: bigint('user_id', { mode: 'number' }).notNull(),
-  token: varchar('token', { length: 255 }).notNull().unique(),
-  createdAt: datetime('created_at').notNull().default(new Date()),
-  expiresAt: datetime('expires_at').notNull(),
-  usedAt: datetime('used_at')
+  locale: varchar('locale', { length: 16 }).notNull().default('de-CH')
 });
 
 // Achievements
@@ -167,8 +141,6 @@ export type AuthIdentity = typeof authIdentities.$inferSelect;
 export type NewAuthIdentity = typeof authIdentities.$inferInsert;
 export type UserSettings = typeof userSettings.$inferSelect;
 export type NewUserSettings = typeof userSettings.$inferInsert;
-export type PushSubscription = typeof pushSubscriptions.$inferSelect;
-export type NewPushSubscription = typeof pushSubscriptions.$inferInsert;
 export type Achievement = typeof achievements.$inferSelect;
 export type NewAchievement = typeof achievements.$inferInsert;
 export type UserAchievement = typeof userAchievements.$inferSelect;
@@ -187,5 +159,3 @@ export type Friendship = typeof friendships.$inferSelect;
 export type NewFriendship = typeof friendships.$inferInsert;
 export type SharedGoal = typeof sharedGoals.$inferSelect;
 export type NewSharedGoal = typeof sharedGoals.$inferInsert;
-export type PasswordReset = typeof passwordResets.$inferSelect;
-export type NewPasswordReset = typeof passwordResets.$inferInsert;

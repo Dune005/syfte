@@ -26,19 +26,7 @@ CREATE TABLE `auth_identities` (
 CREATE TABLE `user_settings` (
   `user_id` bigint PRIMARY KEY,
   `timezone` varchar(64) NOT NULL DEFAULT 'Europe/Zurich',
-  `daily_push_hour` tinyint NOT NULL DEFAULT 10,
-  `daily_push_minute` tinyint NOT NULL DEFAULT 0,
   `locale` varchar(16) NOT NULL DEFAULT 'de-CH'
-);
-
-CREATE TABLE `push_subscriptions` (
-  `id` bigint PRIMARY KEY AUTO_INCREMENT,
-  `user_id` bigint NOT NULL,
-  `endpoint` text NOT NULL,
-  `p256dh` text NOT NULL,
-  `auth_key` text NOT NULL,
-  `created_at` datetime NOT NULL DEFAULT (CURRENT_TIMESTAMP),
-  `last_used_at` datetime
 );
 
 CREATE TABLE `friendships` (
@@ -188,9 +176,7 @@ ALTER TABLE `users` COMMENT = 'Userprofil inkl. Alltime-Summe. favorite_goal_id 
 
 ALTER TABLE `auth_identities` COMMENT = 'OAuth/Passwort Verknuepfungen. Jede Zeile = 1 Identitaet pro Provider.';
 
-ALTER TABLE `user_settings` COMMENT = 'Individuelle App-/Push-Einstellungen, 10:00 Reminder.';
-
-ALTER TABLE `push_subscriptions` COMMENT = 'Web Push (VAPID) Subscriptions fuer PWA-Benachrichtigungen.';
+ALTER TABLE `user_settings` COMMENT = 'Individuelle App-Einstellungen.';
 
 ALTER TABLE `friendships` COMMENT = 'Freundschaften inkl. Pending/Accepted/Blocked. Paar eindeutig. Symmetrie (wer wen eingeladen hat) wird app-seitig oder via View gehandhabt.';
 
@@ -219,8 +205,6 @@ ALTER TABLE `users` ADD FOREIGN KEY (`favorite_goal_id`) REFERENCES `goals` (`id
 ALTER TABLE `auth_identities` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
 
 ALTER TABLE `user_settings` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
-
-ALTER TABLE `push_subscriptions` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
 
 ALTER TABLE `friendships` ADD FOREIGN KEY (`requester_id`) REFERENCES `users` (`id`);
 
