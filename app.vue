@@ -1,14 +1,28 @@
 <template>
+  <!-- Root Layout Wrapper für alle Seiten -->
   <div>
+    <!-- Accessibility: Route Announcements für Screen Reader -->
     <NuxtRouteAnnouncer />
+    
+    <!-- Hauptinhalt: Hier werden alle Pages gerendert -->
     <NuxtPage />
   </div>
 </template>
 
 <script setup>
+/**
+ * App.vue - Root Layout Component
+ * 
+ * Diese Datei ist der Wrapper für alle Seiten in der Syfte-App.
+ * Sie konfiguriert globale Meta-Tags, Fonts und Basis-Styles.
+ * 
+ * WICHTIG: Diese Datei MUSS im Root-Verzeichnis liegen (Nuxt 4 Anforderung)
+ */
+
+// Konfiguriere globale Head-Elemente (Meta-Tags & Fonts)
 useHead({
   meta: [
-    // Viewport mit allen iOS-Optimierungen
+    // iOS-optimiertes Viewport für Safe Areas (Notch, Home-Indicator)
     { name: 'viewport', content: 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover' }
   ],
   link: [

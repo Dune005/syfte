@@ -1,6 +1,8 @@
 <template>
+  <!-- Achievement Popup mit Fade Transition -->
   <Transition name="popup-fade">
     <div v-if="show" class="achievement-popup-overlay" @click.self="closePopup">
+      <!-- Popup Card -->
       <div class="achievement-popup">
         <div class="achievement-content">
           <!-- Achievement Icon/Badge -->
@@ -21,7 +23,7 @@
           <!-- Achievement Description -->
           <p class="achievement-description">{{ achievementDescription }}</p>
           
-          <!-- Button "Gratulation!" -->
+          <!-- Schließen Button -->
           <button @click="closePopup" class="congratulation-button">
             Weiter Sparen 🎉
           </button>
@@ -32,6 +34,31 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * AchievementPopup Component
+ * 
+ * Zeigt ein animiertes Popup an wenn ein Achievement/Auszeichnung
+ * freigeschaltet wurde. Mit Confetti-Effekt und schönem Design.
+ * 
+ * Props:
+ * @param {boolean} show - Steuert Sichtbarkeit des Popups
+ * @param {string} achievementName - Name der Auszeichnung
+ * @param {string} achievementDescription - Beschreibung der Auszeichnung
+ * @param {string} achievementImage - Pfad zum Badge-Bild
+ * 
+ * Events:
+ * @emits close - Wird ausgelöst wenn Popup geschlossen wird
+ * 
+ * Usage:
+ * <AchievementPopup
+ *   :show="showPopup"
+ *   achievementName="Sparmeister"
+ *   achievementDescription="100 CHF gespart!"
+ *   achievementImage="/images/auszeichnungen/sparmeister.png"
+ *   @close="showPopup = false"
+ * />
+ */
+
 interface Props {
   show: boolean;
   achievementName: string;

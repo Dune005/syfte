@@ -76,6 +76,30 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * StreakPopup Component
+ * 
+ * Zeigt ein animiertes Popup an wenn ein User einen neuen Streak-Tag erreicht.
+ * Enthält Flammen-Icon, Streak-Zahl, Wochenansicht (Mo-So) und glückliches Schaf.
+ * 
+ * Das Popup wird nur beim ERSTEN Sparvorgang des Tages angezeigt (Cookie-based tracking).
+ * Siehe Anleitungen/Streaks-System.md für vollständige Dokumentation.
+ * 
+ * Props:
+ * @param {boolean} show - Steuert Sichtbarkeit des Popups
+ * @param {number} streakCount - Aktuelle Anzahl Tage in Folge
+ * @param {boolean[]} weekData - Array mit 7 Werten für Mo-So (true = gespart)
+ * 
+ * Events:
+ * @emits close - Wird ausgelöst wenn Popup geschlossen wird
+ * 
+ * Design:
+ * - Flamme: 140x265px, absolute positioning hinter der Zahl
+ * - Zahl: 120px, weiß mit 5px türkiser Kontur (-webkit-text-stroke)
+ * - Wochenansicht: CheckCircle2 (grün) für gespeicherte Tage, Circle (grau) für nicht gespeichert
+ * - Responsive: 414px und 360px Breakpoints
+ */
+
 import { ref, computed } from 'vue';
 import { Circle, CheckCircle2 } from 'lucide-vue-next';
 

@@ -53,6 +53,29 @@
 </template>
 
 <script setup>
+/**
+ * DeleteConfirmModal Component
+ * 
+ * Wiederverwendbares Bestätigungs-Modal für Lösch-Aktionen.
+ * Unterstützt zwei Modi: 'goal' (Sparziel löschen) und 'friend' (Freundschaft beenden).
+ * 
+ * Props:
+ * @param {boolean} show - Steuert Sichtbarkeit des Modals
+ * @param {string} goalName - Name des Ziels/Freunds der gelöscht werden soll
+ * @param {string} type - Typ des Modals: 'goal' oder 'friend' (Default: 'goal')
+ * 
+ * Events:
+ * @emits confirm - Wird ausgelöst wenn Nutzer Löschung bestätigt
+ * @emits cancel - Wird ausgelöst wenn Nutzer abbricht
+ * 
+ * Features:
+ * - Dynamische Texte basierend auf type
+ * - Loading State während Löschung
+ * - Animated Icon mit Pulse-Effekt
+ * - Teleport für korrektes z-index Handling
+ * - Overlay-Click zum Schließen (nur wenn nicht am Löschen)
+ */
+
 import { ref, watch, computed } from 'vue'
 import { Trash2 } from 'lucide-vue-next'
 

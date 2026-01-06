@@ -1,12 +1,27 @@
-// https://nuxt.com/docs/api/configuration/nuxt-config
+/**
+ * Nuxt 4 Konfiguration für Syfte
+ * 
+ * Hauptkonfigurationsdatei für die gesamte App.
+ * Enthält PWA-Setup, Security Headers, Server-Config und Runtime-Config.
+ * 
+ * Dokumentation: https://nuxt.com/docs/api/configuration/nuxt-config
+ */
+
 export default defineNuxtConfig({
+  // Kompatibilitätsdatum für Feature-Flags
   compatibilityDate: '2025-07-15',
+  
+  // Vue DevTools aktivieren (nur Development)
   devtools: { enabled: true },
 
-  // PWA Modul
+  // Module: PWA für Progressive Web App Funktionalität
   modules: ['@vite-pwa/nuxt'],
 
-  // PWA Konfiguration
+  /**
+   * PWA-Konfiguration
+   * Ermöglicht Installation der App auf dem Home-Screen
+   * und Offline-Funktionalität via Service Worker
+   */
   pwa: {
     registerType: 'autoUpdate',
     injectManifest: {
@@ -42,18 +57,23 @@ export default defineNuxtConfig({
         }
       ]
     },
+    
+    // Workbox: Service Worker Konfiguration für Caching
     workbox: {
       navigateFallback: '/',
       globPatterns: ['**/*.{js,css,html,png,svg,ico,woff,woff2}'],
+      
+      // Runtime Caching: Optimiere externe Resources (Google Fonts)
       runtimeCaching: [
         {
+          // Google Fonts CSS Dateien
           urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
           handler: 'CacheFirst',
           options: {
             cacheName: 'google-fonts-cache',
             expiration: {
               maxEntries: 10,
-              maxAgeSeconds: 60 * 60 * 24 * 365 // 1 Jahr
+              maxAgeSeconds: 60 * 60 * 24 * 365 // 1 Jahr Cache
             },
             cacheableResponse: {
               statuses: [0, 200]
@@ -159,13 +179,17 @@ export default defineNuxtConfig({
     }
   },
 
+  /**
+   * Runtime Configuration
+   * Zugriff über useRuntimeConfig() in der App
+   */
   runtimeConfig: {
-    // Private keys (only available on server-side)
+    // Private Keys: Nur auf Server-Side verfügbar (.env Variablen)
     jwtSecret: process.env.JWT_SECRET,
     dbPassword: process.env.DB_PASSWORD,
     googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
     
-    // Public keys (exposed to client-side)
+    // Public Keys: Auch auf Client-Side verfügbar
     public: {
       appName: 'Syfte',
       appUrl: process.env.APP_URL || 'http://localhost:3200',

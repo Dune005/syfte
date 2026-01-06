@@ -1,25 +1,51 @@
 /**
- * Composable für PWA Installation
+ * usePwaInstall Composable
+ * 
  * Ermöglicht das Anzeigen eines "Zur Startseite hinzufügen" Prompts
+ * für Progressive Web Apps (PWA).
+ * 
+ * Features:
+ * - Erkennt ob App installierbar ist (beforeinstallprompt Event)
+ * - Zeigt nativen Install-Prompt an
+ * - Erkennt iOS Geräte für spezielle Handling
+ * - Prüft ob App bereits installiert ist (display-mode: standalone)
+ * 
+ * Returns:
+ * @returns {object} isInstallable - Ob App installiert werden kann
+ * @returns {object} isInstalled - Ob App bereits installiert ist
+ * @returns {object} isIos - Ob Gerät ein iOS Gerät ist
+ * @returns {object} showIosInstallHint - Ob iOS Installationsanleitung angezeigt werden soll
+ * @returns {function} install - Funktion zum Anzeigen des Install-Prompts
+ * 
+ * Usage:
+ * const { isInstallable, isInstalled, install } = usePwaInstall()
+ * if (isInstallable.value) await install()
  */
 export const usePwaInstall = () => {
+  // Deferred Prompt für späteren Aufruf
   const deferredPrompt = ref<any>(null)
   const isInstallable = ref(false)
   const isInstalled = ref(false)
 
-  // Prüfe ob die App bereits installiert ist
+  /**
+   * Prüft ob die App bereits installiert ist
+   * Checkt sowohl Standard PWA als auch iOS Standalone Mode
+   */
   const checkIfInstalled = () => {
     if (typeof window !== 'undefined') {
-      // Check display-mode media query
+      // Check display-mode media query (Standard PWA)
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-      // Check iOS standalone mode
+      // Check iOS standalone mode (Safari spezifisch)
       const isIosStandalone = (window.navigator as any).standalone === true
       
       isInstalled.value = isStandalone || isIosStandalone
     }
   }
 
-  // Installiere die App
+  /**
+   * Installiert die App via nativem Browser-Prompt
+   * @returns {Promise<boolean>} true wenn Installation erfolgreich, false wenn abgelehnt
+   */
   const install = async () => {
     if (!deferredPrompt.value) {
       console.log('Installation nicht möglich - kein Prompt verfügbar')
@@ -49,19 +75,28 @@ export const usePwaInstall = () => {
     }
   }
 
-  // iOS-spezifische Installationsanleitung
+  /**
+   * Computed: Erkennt ob Gerät ein iOS Gerät ist (iPhone, iPad, iPod)
+   */
   const isIos = computed(() => {
     if (typeof window === 'undefined') return false
     const userAgent = window.navigator.userAgent.toLowerCase()
     return /iphone|ipad|ipod/.test(userAgent)
   })
 
+  /**
+   * Computed: Erkennt ob Browser Safari ist (für iOS PWA Support)
+   */
   const isSafari = computed(() => {
     if (typeof window === 'undefined') return false
     const userAgent = window.navigator.userAgent.toLowerCase()
     return /safari/.test(userAgent) && !/chrome/.test(userAgent)
   })
 
+  /**
+   * Computed: Zeigt ob iOS Installationsanleitung angezeigt werden soll
+   * Nur auf iOS Safari und wenn noch nicht installiert
+   */
   const showIosInstallHint = computed(() => {
     return isIos.value && isSafari.value && !isInstalled.value
   })
@@ -69,7 +104,8 @@ export const usePwaInstall = () => {
   onMounted(() => {
     checkIfInstalled()
 
-    // Lausche auf den beforeinstallprompt Event
+    // Event Listener: beforeinstallprompt (Chrome, Edge, etc.)
+    // Wird gefeuert wenn Browser erkennt dass App installierbar ist
     window.addEventListener('beforeinstallprompt', (e: Event) => {
       e.preventDefault()
       deferredPrompt.value = e
@@ -77,7 +113,8 @@ export const usePwaInstall = () => {
       console.log('App kann installiert werden')
     })
 
-    // Lausche auf erfolgreiche Installation
+    // Event Listener: appinstalled
+    // Wird gefeuert wenn App erfolgreich installiert wurde
     window.addEventListener('appinstalled', () => {
       console.log('App wurde erfolgreich installiert')
       isInstalled.value = true

@@ -32,7 +32,7 @@ Syfte ist eine moderne Spar-App basierend auf Nuxt.js, die es Nutzern ermöglich
 - Design: Figma (UI-Design, Prototyping, Clickflows)
   - **Figma File Key:** tLgaFKFXHePoBy6zYofs0O
   - **Zugriff:** Via MCP Figma Server mit `mcp_figma_get_figma_data`
-  - **Design Specs:** Siehe auch `specs/designkonzept/requirements.md` für Farbschema und Typography
+  - **Design Specs:** Siehe auch `Anleitungen/Designkonzept.md` für Farbschema und Typography
 
 ## Hosting & DevOps
 - Hosting: Vercel, eigener Webserver
@@ -63,7 +63,7 @@ Syfte ist eine moderne Spar-App basierend auf Nuxt.js, die es Nutzern ermöglich
   - `camelCase` für Variablen und Funktionen
   - `PascalCase` für Komponenten und Klassen
 - **v-html:** Nur im `MarkdownRenderer.vue` Component erlaubt
-- **Design-Änderungen:** Bei Frontend-Änderungen die mit Design/UI zu tun haben, immer zuerst `specs/designkonzept/requirements.md` konsultieren
+- **Design-Änderungen:** Bei Frontend-Änderungen die mit Design/UI zu tun haben, immer zuerst `Anleitungen/Designkonzept.md` konsultieren
 
 ## iOS/Smartphone Spezifische Richtlinien
 - **Viewport Meta-Tag:** Immer `viewport-fit=cover` verwenden für vollflächige Darstellung auf iPhones

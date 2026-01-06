@@ -1,9 +1,33 @@
+/**
+ * Streaks System V2 - Optimierte Implementierung
+ * 
+ * Verwaltet Spar-Serien (Streaks) für User.
+ * Eine Serie zählt wie viele Tage hintereinander ein User gespart hat.
+ * 
+ * WICHTIGE ÄNDERUNGEN V2:
+ * - Pro User nur NOCH EIN Streak-Eintrag (nicht pro Goal)
+ * - current_count erhöht sich nur 1x pro Tag (beim ersten Sparvorgang)
+ * - goal_id wird auf das Ziel gesetzt für das HEUTE gespart wurde
+ * - Bei mehreren Saves am selben Tag: goal_id wird geupdated (letztes Ziel gewinnt)
+ * - Löscht Streak-Eintrag bei Unterbrechung (wenn ein Tag ausgelassen wurde)
+ * 
+ * Cookie-based Popup-Tracking:
+ * - Streak-Popup wird nur beim ersten Sparvorgang des Tages angezeigt
+ * - Cookie `streak_popup_shown_{userId}` verhindert mehrfache Anzeige
+ * - Cookie läuft um Mitternacht ab
+ * 
+ * Siehe auch: Anleitungen/Streaks-System-V2.md
+ */
+
 import { eq, and, isNull, sql } from 'drizzle-orm';
 import { db } from './database/connection';
 import { streaks } from './database/schema';
 
 /**
- * Helper function to compare dates (ignoring time)
+ * Helper: Vergleicht zwei Datums-Objekte (ignoriert Uhrzeit)
+ * @param date1 - Erstes Datum (kann null sein)
+ * @param date2 - Zweites Datum
+ * @returns true wenn selber Tag, false sonst
  */
 const isSameDay = (date1: Date | null, date2: Date): boolean => {
   if (!date1) return false;
@@ -13,12 +37,20 @@ const isSameDay = (date1: Date | null, date2: Date): boolean => {
 };
 
 /**
- * OPTIMIERTE Streak-Verwaltung V2:
- * - Pro Tag NUR EIN Streak-Eintrag pro User (nicht pro Goal)
- * - current_count erhöht sich nur 1x pro Tag (beim ersten Sparvorgang)
- * - goal_id wird auf das Ziel gesetzt, für das HEUTE gespart wurde
- * - Bei mehreren Saves am selben Tag: goal_id wird geupdated (letztes Ziel gewinnt)
- * - Löscht Streak-Eintrag bei Unterbrechung (wenn ein Tag ausgelassen wurde)
+ * Aktualisiert den User-Streak nach einem Sparvorgang
+ * 
+ * Logic Flow:
+ * 1. Prüfe ob heute bereits gespart wurde → Nur goal_id updaten
+ * 2. Prüfe ob gestern gespart wurde → Streak continues (+1)
+ * 3. Wenn nicht gestern → Streak unterbrochen → Eintrag löschen und neu starten
+ * 
+ * @param userId - User ID
+ * @param goalId - Goal ID für das gespart wurde
+ * @returns Object mit currentStreak, longestStreak, isNewRecord
+ * 
+ * @example
+ * const result = await updateUserStreak(123, 456)
+ * console.log(`Streak: ${result.currentStreak} Tage`)
  */
 export async function updateUserStreak(userId: number, goalId: number): Promise<{
   currentStreak: number;
@@ -126,7 +158,13 @@ export async function updateUserStreak(userId: number, goalId: number): Promise<
 }
 
 /**
- * Get current streak for a user (NUR user-based, keine goal-spezifische Prüfung mehr)
+ * Holt den aktuellen Streak eines Users
+ * 
+ * User-based (nicht goal-spezifisch).
+ * Gibt 0 zurück wenn kein Streak-Eintrag existiert.
+ * 
+ * @param userId - User ID
+ * @returns Object mit current, longest, lastSaveDate, goalId
  */
 export async function getCurrentStreak(userId: number): Promise<{
   current: number;
@@ -174,10 +212,22 @@ export async function getCurrentStreak(userId: number): Promise<{
 }
 
 /**
- * VALIDIERTE Streak-Abfrage:
+ * Holt und VALIDIERT den aktuellen Streak
+ * 
  * Prüft ob der Streak noch gültig ist (heute oder gestern gespart).
- * Wenn nicht, wird der Streak auf 0 gesetzt (in der DB gelöscht).
- * Diese Funktion sollte beim Dashboard-Aufruf verwendet werden.
+ * Wenn nicht: Streak wird auf 0 gesetzt (Eintrag in DB gelöscht).
+ * 
+ * WICHTIG: Diese Funktion beim Dashboard-Aufruf verwenden!
+ * So wird verhindert dass abgelaufene Streaks angezeigt werden.
+ * 
+ * @param userId - User ID
+ * @returns Object mit current, longest, lastSaveDate, goalId, wasReset
+ * 
+ * @example
+ * const streak = await getValidatedStreak(userId)
+ * if (streak.wasReset) {
+ *   // Streak wurde zurückgesetzt, User benachrichtigen
+ * }
  */
 export async function getValidatedStreak(userId: number): Promise<{
   current: number;

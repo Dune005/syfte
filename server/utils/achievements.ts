@@ -1,16 +1,44 @@
+/**
+ * Achievements System
+ * 
+ * Gamification-System für User-Erfolge und Auszeichnungen.
+ * Überprüft automatisch ob neue Achievements freigeschaltet wurden
+ * und gibt diese zurück für Popup-Anzeige.
+ * 
+ * Achievement Types:
+ * - streak_days: Spar-Serien (X Tage in Folge)
+ * - goal_completed: Anzahl abgeschlossener Ziele
+ * - total_saved: Gesamtsumme gespart (CHF)
+ * - daily_save: Anzahl einzelner Sparvorgänge
+ * - custom: Benutzerdefinierte Logik (z.B. "Woll-Anfänger")
+ * 
+ * Custom Achievements (Beispiele):
+ * - woll-anfaenger: Erste Spar-Aktion
+ * - herdenfuehrer: Zweites Sparziel angelegt
+ * - gipfelstuermer: 50% eines Ziels erreicht
+ * - medaillen-trio: 3 verschiedene Aktionen genutzt
+ * - ziel-sprinter: Ziel in 30 Tagen erreicht
+ * 
+ * Usage:
+ * const newAchievements = await checkAndAwardAchievements(userId)
+ * if (newAchievements.length > 0) {
+ *   // Zeige Popup für erstes Achievement
+ *   showAchievementPopup(newAchievements[0])
+ * }
+ */
+
 import { eq, sql, and } from 'drizzle-orm';
 import { db } from './database/connection';
 import { achievements, userAchievements, users, goals, savings, streaks } from './database/schema';
 
-/**
- * Achievement Criteria Types:
- * - streak_days: Consecutive days of saving
- * - goal_completed: Number of completed goals
- * - total_saved: Total amount saved in CHF
- * - daily_save: Number of individual savings
- * - custom: Custom logic
- */
+// ============================================
+// TYPES & INTERFACES
+// ============================================
 
+/**
+ * Achievement Progress Interface
+ * Zeigt Fortschritt eines Users für ein bestimmtes Achievement
+ */
 interface AchievementProgress {
   achievementId: number;
   slug: string;
@@ -24,6 +52,10 @@ interface AchievementProgress {
   isEarned: boolean;
 }
 
+/**
+ * Newly Unlocked Achievement Interface
+ * Repr\u00e4sentiert ein frisch freigeschaltetes Achievement
+ */
 interface NewlyUnlockedAchievement {
   id: number;
   slug: string;
@@ -35,8 +67,15 @@ interface NewlyUnlockedAchievement {
   unlockedAt: Date;
 }
 
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
 /**
- * Get user's current values for all achievement criteria
+ * Holt alle relevanten User-Statistiken f\u00fcr Achievement-Checks
+ * 
+ * @param userId - User ID
+ * @returns Object mit totalSaved, completedGoals, savingsCount, streaks
  */
 async function getUserAchievementStats(userId: number) {
   // Get total saved amount

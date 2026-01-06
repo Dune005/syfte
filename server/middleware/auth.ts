@@ -1,10 +1,32 @@
+/**
+ * Authentication Middleware
+ * 
+ * Schützt API-Endpunkte vor unautorisiertem Zugriff.
+ * 
+ * Flow:
+ * 1. Überprüft ob Route öffentlich ist (Login, Register, etc.)
+ * 2. Bei geschützten Routes: JWT Token aus Cookie lesen
+ * 3. Token validieren und User aus DB laden
+ * 4. User-Status prüfen (isActive)
+ * 5. User-Info in event.context speichern für spätere Nutzung
+ * 
+ * Bei Fehlern:
+ * - 401 Unauthorized: Kein/Ungültiges Token oder User nicht gefunden
+ * - 403 Forbidden: Account deaktiviert
+ * 
+ * Usage in API Routes:
+ * const userId = event.context.userId // Immer verfügbar bei geschützten Routes
+ * const user = event.context.user // Enthält userId, username, email
+ */
+
 import { verifyJWT, getAuthCookie } from '../utils/auth';
 import { db } from '../utils/database/connection';
 import { users } from '../utils/database/schema';
 import { eq } from 'drizzle-orm';
 
 export default defineEventHandler(async (event) => {
-  // Skip auth for public routes
+  // === 1. PUBLIC ROUTES CHECK ===
+  // Diese Routes sind ohne Authentication zugänglich
   const url = event.node.req.url || '';
   
   const publicRoutes = [
@@ -16,17 +38,20 @@ export default defineEventHandler(async (event) => {
     '/api/health'
   ];
 
-  // Check if current route is public
+  // Frühzeitiger Return für öffentliche Routes
   const isPublicRoute = publicRoutes.some(route => url.startsWith(route));
   
   if (isPublicRoute) {
     return;
   }
 
-  // For protected API routes, verify authentication
+  // === 2. PROTECTED API ROUTES ===
+  // Alle anderen /api/* Routes benötigen Authentication
   if (url.startsWith('/api/')) {
+    // 2.1. Token aus Cookie lesen
     const token = getAuthCookie(event);
     
+    // 2.2. Prüfe ob Token vorhanden ist
     if (!token) {
       throw createError({
         statusCode: 401,
@@ -34,6 +59,7 @@ export default defineEventHandler(async (event) => {
       });
     }
 
+    // 2.3. Validiere JWT Token
     const payload = verifyJWT(token);
     if (!payload) {
       throw createError({
@@ -42,7 +68,7 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    // Check if user account is active
+    // 2.4. Überprüfe ob User-Account noch aktiv ist
     const user = await db
       .select({ isActive: users.isActive })
       .from(users)
@@ -63,12 +89,13 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    // Add user info to event context
+    // 2.5. Speichere User-Info in event.context
+    // Dies ermöglicht späteren Zugriff in API Routes
     event.context.user = {
       userId: payload.userId,
       username: payload.username,
       email: payload.email
     };
-    event.context.userId = payload.userId; // For backwards compatibility
+    event.context.userId = payload.userId; // Backwards compatibility
   }
 });

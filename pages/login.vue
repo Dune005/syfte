@@ -67,6 +67,34 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * Login Page
+ * 
+ * Authentifizierungsseite für bestehende Nutzer.
+ * Ermöglicht Login via E-Mail/Username und Passwort.
+ * 
+ * Features:
+ * - Client-side Validierung mit Echtzeit-Feedback
+ * - Field-level Error Handling
+ * - Auto-Focus auf erstes fehlerhalftes Feld
+ * - Loading States & Disabled Buttons während Request
+ * - Timeout Protection (10s AbortController)
+ * - HttpOnly Cookie Session Management
+ * - Accessibility Support (ARIA Labels, Live Regions)
+ * 
+ * Security:
+ * - Rate Limiting auf Server-Side
+ * - HttpOnly Cookies für Session
+ * - CSRF Protection via Nuxt Security Module
+ * 
+ * Flow:
+ * 1. Nutzer gibt Credentials ein
+ * 2. Client-side Validierung
+ * 3. API Call zu /api/auth/login
+ * 4. Bei Erfolg: Redirect zu /dashboard
+ * 5. Bei Fehler: User-freundliche Fehlermeldung
+ */
+
 import { ref, reactive, nextTick } from 'vue'
 import { useRouter, useHead } from '#imports'
 import { ArrowLeft } from 'lucide-vue-next'
@@ -80,18 +108,21 @@ useHead({
 
 const router = useRouter()
 
-// form state
+// === Form State ===
 const usernameOrEmail = ref('')
 const password = ref('')
 const loading = ref(false)
-const error = ref('')
-const fieldErrors = reactive<{ email?: string; password?: string }>({})
+const error = ref('') // Global error message
+const fieldErrors = reactive<{ email?: string; password?: string }>({}) // Field-specific errors
 
-// refs for focus management
+// === Refs for Focus Management ===
 const emailRef = ref<HTMLInputElement | null>(null)
 const passwordRef = ref<HTMLInputElement | null>(null)
 
-// small utility for focusing first invalid field
+/**
+ * Helper: Fokussiert das erste fehlerhafte Feld
+ * Verbessert Accessibility und UX
+ */
 async function focusFirstInvalid() {
   await nextTick()
   if (fieldErrors.email && emailRef.value) {

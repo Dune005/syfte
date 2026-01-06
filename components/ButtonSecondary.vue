@@ -1,4 +1,5 @@
 <template>
+  <!-- Button als Link (wenn 'to' prop gesetzt) -->
   <NuxtLink 
     v-if="to"
     :to="to"
@@ -6,6 +7,8 @@
   >
     <slot />
   </NuxtLink>
+  
+  <!-- Button als Standard-Button -->
   <button
     v-else
     :type="type"
@@ -17,6 +20,24 @@
 </template>
 
 <script setup>
+/**
+ * ButtonSecondary Component
+ * 
+ * Sekundärer Button für weniger wichtige Aktionen (heller mit Border).
+ * Kann entweder als Link (NuxtLink) oder als Button gerendert werden.
+ * 
+ * Props:
+ * @param {string} to - Optional: Route für Navigation (macht Button zum Link)
+ * @param {string} type - Button Type (button, submit, reset) - Default: 'button'
+ * 
+ * Events:
+ * @emits {MouseEvent} click - Emitted wenn Button geklickt wird (nur bei Nicht-Links)
+ * 
+ * Usage:
+ * <ButtonSecondary to="/back">Zurück</ButtonSecondary>
+ * <ButtonSecondary @click="handleCancel">Abbrechen</ButtonSecondary>
+ */
+
 defineProps({
   to: {
     type: String,

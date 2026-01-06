@@ -65,7 +65,7 @@ mysql -u username -p database_name < db/syfte.sql
 npm run dev
 ```
 
-Die App ist dann unter `http://localhost:3200` verfügbar.
+Die App ist dann unter `https://www.syfte.ch` verfügbar.
 
 ### Verfügbare Scripts
 ```bash

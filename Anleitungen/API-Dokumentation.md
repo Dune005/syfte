@@ -1,7 +1,7 @@
 # Syfte API Dokumentation
 
 **Version:** 1.0.0  
-**Base URL:** `http://localhost:3200/api`  
+**Base URL:** `https://www.syfte.ch/api`  
 **Authentifizierung:** JWT Token via httpOnly Cookie
 
 ---

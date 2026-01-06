@@ -1,4 +1,5 @@
 <template>
+  <!-- Button als Link (wenn 'to' prop gesetzt) -->
   <NuxtLink 
     v-if="to"
     :to="to"
@@ -6,6 +7,8 @@
   >
     <slot />
   </NuxtLink>
+  
+  <!-- Button als Standard-Button -->
   <button
     v-else
     :type="type"
@@ -17,6 +20,24 @@
 </template>
 
 <script setup>
+/**
+ * ButtonPrimary Component
+ * 
+ * Primärer Button für Haupt-Aktionen (dunkler Hintergrund).
+ * Kann entweder als Link (NuxtLink) oder als Button gerendert werden.
+ * 
+ * Props:
+ * @param {string} to - Optional: Route für Navigation (macht Button zum Link)
+ * @param {string} type - Button Type (button, submit, reset) - Default: 'button'
+ * 
+ * Events:
+ * @emits {MouseEvent} click - Emitted wenn Button geklickt wird (nur bei Nicht-Links)
+ * 
+ * Usage:
+ * <ButtonPrimary to="/login">Zum Login</ButtonPrimary>
+ * <ButtonPrimary @click="handleSubmit">Speichern</ButtonPrimary>
+ */
+
 defineProps({
   to: {
     type: String,
