@@ -5,7 +5,8 @@
     <a href="https://www.syfte.ch">Live App</a> •
     <a href="#-features">Features</a> •
     <a href="#-installation">Installation</a> •
-    <a href="#-contributing">Contributing</a>
+    <a href="#-contributing">Contributing</a> •
+    <a href="docs/">Dokumentation</a>
   </p>
 </div>
 
@@ -20,6 +21,8 @@
 - **Verzichtsaktionen tracken**: Kaffee-to-go, Take-away-Essen
 - **Fortschritt visualisieren**: Jeder eingesparte Betrag füllt den Zielbalken
 - **Motiviert bleiben**: Streaks, Achievements und soziales Sparen mit Freunden
+
+> 📚 **[Zur vollständigen Projekt-Dokumentation](docs/)** mit Funktionsumfang, Known Bugs, Projektlearnings und persönlichen Reflexionen.
 
 ---
 

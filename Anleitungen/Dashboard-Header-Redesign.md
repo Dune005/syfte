@@ -212,7 +212,7 @@ Dieses Dokument beschreibt den Plan für das Redesign des Dashboard-Headers der 
   - Glassmorphism CSS: https://ui.glass/generator/
 
 - **Syfte Design System**:
-  - Farbschema: Anleitungen/Designkonzept.md
+  - Farbschema: docs/Designkonzept.md
   - Font: Urbanist (Google Fonts)
 
 ---
