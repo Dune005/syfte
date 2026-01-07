@@ -67,7 +67,7 @@
 
 ### Setup
 
-\`\`\`bash
+```bash
 # Repository klonen
 git clone https://github.com/Dune005/syfte.git
 cd syfte
@@ -84,27 +84,27 @@ mysql -u username -p database_name < db/syfte.sql
 
 # Development Server starten
 npm run dev
-\`\`\`
+```
 
-Die App läuft dann auf \`http://localhost:3200\`.
+Die App läuft dann auf `http://localhost:3200`.
 
 ### Scripts
 
-\`\`\`bash
+```bash
 npm run dev         # Dev Server (Port 3200)
 npm run dev:3000    # Dev Server (Port 3000)
 npm run dev:alt     # Dev Server (Port 3100)
 npm run build       # Production Build
 npm run preview     # Production Preview
-\`\`\`
+```
 
 ---
 
 ## 🔐 Environment Variables
 
-Erstelle eine \`.env\` Datei im Root-Verzeichnis:
+Erstelle eine `.env` Datei im Root-Verzeichnis:
 
-\`\`\`bash
+```bash
 # Database (erforderlich)
 DATABASE_URL="mysql://user:password@host:port/database"
 
@@ -117,30 +117,30 @@ GOOGLE_CLIENT_SECRET="your-google-client-secret"
 
 # App Config
 APP_URL="http://localhost:3200"
-\`\`\`
+```
 
-**Hinweis**: \`DATABASE_URL\` und \`SESSION_SECRET\` sind zwingend erforderlich.
+**Hinweis**: `DATABASE_URL` und `SESSION_SECRET` sind zwingend erforderlich.
 
 ---
 
 ## 📊 Datenbankstruktur
 
-Haupttabellen (vollständiges Schema in [\`db/syfte.sql\`](db/syfte.sql)):
+Haupttabellen (vollständiges Schema in [`db/syfte.sql`](db/syfte.sql)):
 
 | Tabelle | Beschreibung |
 |---------|-------------|
-| \`users\` | Benutzerprofile mit Gesamtersparnis |
-| \`goals\` | Sparziele mit Fortschritt & Sharing |
-| \`savings\` | Einzelne Sparvorgänge (Transaktionen) |
-| \`achievements\` | Auszeichnungen & Meilensteine |
-| \`streaks\` | Spar-Serien Tracking |
-| \`friendships\` | Soziales Netzwerk |
+| `users` | Benutzerprofile mit Gesamtersparnis |
+| `goals` | Sparziele mit Fortschritt & Sharing |
+| `savings` | Einzelne Sparvorgänge (Transaktionen) |
+| `achievements` | Auszeichnungen & Meilensteine |
+| `streaks` | Spar-Serien Tracking |
+| `friendships` | Soziales Netzwerk |
 
 ---
 
 ## 🎨 Projektstruktur
 
-\`\`\`
+```
 syfte/
 ├── pages/           # Nuxt Auto-Routing Pages
 ├── components/      # Vue Komponenten
@@ -151,7 +151,7 @@ syfte/
 ├── db/              # SQL Schema & Migrationen
 ├── public/          # Statische Assets (PWA Icons)
 └── Anleitungen/     # Projekt-Dokumentation
-\`\`\`
+```
 
 ---
 
@@ -160,17 +160,17 @@ syfte/
 Contributions sind willkommen! Bitte folge diesen Schritten:
 
 1. Fork das Repository
-2. Feature Branch erstellen (\`git checkout -b feature/dein-feature\`)
+2. Feature Branch erstellen (`git checkout -b feature/dein-feature`)
 3. Changes committen (Conventional Commits)
 4. Tests durchführen
-5. Push zum Branch (\`git push origin feature/dein-feature\`)
+5. Push zum Branch (`git push origin feature/dein-feature`)
 6. Pull Request öffnen
 
 ### Coding Guidelines
 - TypeScript mit strikter Typisierung
 - Vue Composition API (keine Options API)
 - Async/await statt Promises
-- Siehe [\`.github/copilot-instructions.md\`](.github/copilot-instructions.md) für Details
+- Siehe [`.github/copilot-instructions.md`](.github/copilot-instructions.md) für Details
 
 ---
 
