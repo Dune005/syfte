@@ -9,7 +9,7 @@
 - [Datenbankstruktur](#-datenbankstruktur)
 - [Known Bugs](#-known-bugs)
 - [Projektlearnings](#-projektlearnings)
-- [Persönliche Reflexion](#-persönliche-reflexion)
+- [Reflexion](#-reflexion)
 - [Weiterführende Dokumentation](#-weiterführende-dokumentation)
 
 ---
